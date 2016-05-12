@@ -16,9 +16,9 @@ Calendar FAR macro
 
 ## Requirement
 
-[LuaDate](https://raw.githubusercontent.com/Tieske/date/).
+[LuaDate](https://github.com/Tieske/date/)
 
 ## License
 
-[BSD 3-Clause](https://opensource.org/licenses/BSD-3-Clause).
+[BSD 3-Clause](https://opensource.org/licenses/BSD-3-Clause)
 
