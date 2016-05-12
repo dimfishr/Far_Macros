@@ -2,6 +2,8 @@
 
 Calendar FAR macro
 
+![alt text](http://i78.fastpic.ru/big/2016/0512/9a/51d0774d5e51a5977b3a0cc67458d49a.png "Calendar")
+
 ##Features:
 
 * Year and Month selection.
