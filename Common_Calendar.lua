@@ -12,6 +12,8 @@ local Formats = {
     "%Y_%m_%d",
     "%Y-%m-%d",
     "%Y.%m.%d",
+    "%d-%b-%y",
+    "%d-%b-%Y",
 }
 
 local Weeks = {
@@ -101,11 +103,11 @@ function InitCalendar()
 
     I[#I + 1] = { F.DI_USERCONTROL, 4, row + 1, 31, row + 6, 0, 0, 0, F.DIF_FOCUS }
     ID.userControl = #I
-    I[#I + 1] = { F.DI_COMBOBOX, 6, 13, 15, 13, ComboFormats, 0, 0, F.DIF_DROPDOWNLIST, "" }
+    I[#I + 1] = { F.DI_COMBOBOX, 6, 13, 16, 13, ComboFormats, 0, 0, F.DIF_DROPDOWNLIST, "" }
     ID.format = #I
     I[#I + 1] = { F.DI_COMBOBOX, 19, 13, 28, 13, ComboWeeks, 0, 0, F.DIF_DROPDOWNLIST, "" }
     ID.weeks = #I
-    I[#I + 1] = { F.DI_FIXEDIT, 6, 15, 15, 15, 0, 0, "9999999999", F.DIF_READONLY, "" }
+    I[#I + 1] = { F.DI_FIXEDIT, 6, 15, 16, 15, 0, 0, 0, F.DIF_READONLY, "" }
     ID.text = #I
     I[#I + 1] = { F.DI_TEXT, 19, 15, 28, 15, 0, 0, 0, 0, "" }
     ID.textAdd = #I
