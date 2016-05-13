@@ -69,17 +69,17 @@ function InitCalendar()
     local CF = {}
 
     I[#I + 1] = { F.DI_DOUBLEBOX, 3, 1, 32, 18, 0, 0, 0, 0, Localization().Title }
-    I[#I + 1] = { F.DI_BUTTON, 11, 2, 0, 2, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctl↑" }
+    I[#I + 1] = { F.DI_BUTTON, 11, 2, 0, 2, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctl→" }
     ID.yearInc = #I
-    I[#I + 1] = { F.DI_BUTTON, 18, 2, 0, 2, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl←" }
+    I[#I + 1] = { F.DI_BUTTON, 18, 2, 0, 2, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl↑" }
     ID.monthInc = #I
     I[#I + 1] = { F.DI_FIXEDIT, 11, 3, 14, 3, 0, 0, "9999", F.DIF_MASKEDIT, "" }
     ID.year = #I
     I[#I + 1] = { F.DI_COMBOBOX, 16, 3, 24, 5, ComboMonths, 0, 0, F.DIF_DROPDOWNLIST, "" }
     ID.month = #I
-    I[#I + 1] = { F.DI_BUTTON, 11, 4, 0, 4, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctl↓" }
+    I[#I + 1] = { F.DI_BUTTON, 11, 4, 0, 4, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctl←" }
     ID.yearDec = #I
-    I[#I + 1] = { F.DI_BUTTON, 18, 4, 0, 4, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl→" }
+    I[#I + 1] = { F.DI_BUTTON, 18, 4, 0, 4, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl↓" }
     ID.monthDec = #I
 
     local row = 5
@@ -215,29 +215,33 @@ function InitCalendar()
                 dt:addmonths(1)
             end
             Redraw(hDlg)
-        elseif Msg == F.DN_CONTROLINPUT and Param1 == ID.userControl then
-            if Param2.ControlKeyState and band(Param2.ControlKeyState, 0x0008 + 0x0004) ~= 0 then
+        elseif Msg == F.DN_CONTROLINPUT then
+            if Param1 ~= ID.month and Param1 ~= ID.format and Param1 ~= ID.weeks and
+                    Param2.ControlKeyState and band(Param2.ControlKeyState, 0x0008 + 0x0004) ~= 0 then
                 if Param2.VirtualKeyCode == 37 then
-                    dt:addmonths(-1)
-                elseif Param2.VirtualKeyCode == 38 then
-                    dt:addyears(1)
-                elseif Param2.VirtualKeyCode == 39 then
-                    dt:addmonths(1)
-                elseif Param2.VirtualKeyCode == 40 then
                     dt:addyears(-1)
+                elseif Param2.VirtualKeyCode == 38 then
+                    dt:addmonths(1)
+                elseif Param2.VirtualKeyCode == 39 then
+                    dt:addyears(1)
+                elseif Param2.VirtualKeyCode == 40 then
+                    dt:addmonths(-1)
                 end
-            elseif Param2.VirtualKeyCode == 37 then
-                dt:adddays(-1)
-            elseif Param2.VirtualKeyCode == 38 then
-                dt:adddays(-7)
-            elseif Param2.VirtualKeyCode == 39 then
-                dt:adddays(1)
-            elseif Param2.VirtualKeyCode == 40 then
-                dt:adddays(7)
-            elseif Param2.ButtonState == 1 then
-                dt:adddays(math.floor(Param2.MousePositionX / 4) + Param2.MousePositionY * 7 + 1 - tableSelected)
+                Redraw(hDlg)
+            elseif Param1 == ID.userControl then
+                if Param2.VirtualKeyCode == 37 then
+                    dt:adddays(-1)
+                elseif Param2.VirtualKeyCode == 38 then
+                    dt:adddays(-7)
+                elseif Param2.VirtualKeyCode == 39 then
+                    dt:adddays(1)
+                elseif Param2.VirtualKeyCode == 40 then
+                    dt:adddays(7)
+                elseif Param2.ButtonState == 1 then
+                    dt:adddays(math.floor(Param2.MousePositionX / 4) + Param2.MousePositionY * 7 + 1 - tableSelected)
+                end
+                Redraw(hDlg)
             end
-            Redraw(hDlg)
         end
     end
 
