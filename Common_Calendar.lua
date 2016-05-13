@@ -20,6 +20,14 @@ local Weeks = {
     "[%W] [%j]",
 }
 
+local Colors = {
+    Normal = 0x0,
+    Weekend = 0x4,
+    Today = 0x9,
+    Selected = 0xE,
+    Disabled = 0x8,
+}
+
 
 local function Localization()
     if far.lang == "Russian" then
@@ -42,7 +50,12 @@ end
 local F = far.Flags
 local date = require("date")
 local fmt = string.format
+local band = bit.band
+local bor = bit.bor
 
+local function setFg(color, val) return bor(band(color, 0x0F), band(val, 0xF)) end
+
+local function setBg(color, val) return bor(band(color, 0xF0), band(val, 0xF)) end
 
 function InitCalendar()
     local Settings = mf.mload("dimfish", "Calendar") or { Format = 1, Weeks = 1 }
@@ -58,29 +71,36 @@ function InitCalendar()
 
     local I = {}
     local ID = {}
+    local CF = {}
 
     I[#I + 1] = { F.DI_DOUBLEBOX, 3, 1, 32, 18, 0, 0, 0, 0, Localization().Title }
-    I[#I + 1] = { F.DI_BUTTON, 5, 3, 0, 3, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "<<" }
-    ID.yearDec = #I
-    I[#I + 1] = { F.DI_BUTTON, 8, 3, 0, 3, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, " <" }
-    ID.monthDe = #I
+    I[#I + 1] = { F.DI_BUTTON, 11, 2, 0, 2, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctl↑" }
+    ID.yearInc = #I
+    I[#I + 1] = { F.DI_BUTTON, 18, 2, 0, 2, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl←" }
+    ID.monthInc = #I
     I[#I + 1] = { F.DI_FIXEDIT, 11, 3, 14, 3, 0, 0, "9999", F.DIF_MASKEDIT, "" }
     ID.year = #I
-    I[#I + 1] = { F.DI_COMBOBOX, 16, 3, 23, 5, ComboMonths, 0, 0, F.DIF_DROPDOWNLIST, "" }
+    I[#I + 1] = { F.DI_COMBOBOX, 16, 3, 24, 5, ComboMonths, 0, 0, F.DIF_DROPDOWNLIST, "" }
     ID.month = #I
-    I[#I + 1] = { F.DI_BUTTON, 26, 3, 0, 3, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "> " }
-    ID.monthInc = #I
-    I[#I + 1] = { F.DI_BUTTON, 29, 3, 0, 3, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, ">>" }
-    ID.yearInc = #I
+    I[#I + 1] = { F.DI_BUTTON, 11, 4, 0, 4, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctl↓" }
+    ID.yearDec = #I
+    I[#I + 1] = { F.DI_BUTTON, 18, 4, 0, 4, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl→" }
+    ID.monthDec = #I
 
     local row = 5
     for d = 1, 7 do
         I[#I + 1] = { F.DI_TEXT, d * 4 + 1, row, 0, row, 0, 0, 0, d > 5 and F.DIF_DISABLE or 0, Localization().DaysOfWeek[d] }
+        if d > 5 then
+            CF[#I] = Colors.Weekend
+        end
     end
     ID.table = #I
     for w = 0, 5 do
         for d = 1, 7 do
             I[#I + 1] = { F.DI_TEXT, d * 4, row + 1 + w, 0, row + 1 + w, 0, 0, 0, 0, "" }
+            if d > 5 then
+                CF[#I] = Colors.Weekend
+            end
         end
     end
 
@@ -90,7 +110,7 @@ function InitCalendar()
     ID.format = #I
     I[#I + 1] = { F.DI_COMBOBOX, 19, 13, 28, 13, ComboWeeks, 0, 0, F.DIF_DROPDOWNLIST, "" }
     ID.weeks = #I
-    I[#I + 1] = { F.DI_TEXT, 6, 15, 15, 15, 0, 0, 0, 0, "" }
+    I[#I + 1] = { F.DI_FIXEDIT, 6, 15, 15, 15, 0, 0, "9999999999", F.DIF_READONLY, "" }
     ID.text = #I
     I[#I + 1] = { F.DI_TEXT, 19, 15, 28, 15, 0, 0, 0, 0, "" }
     ID.textAdd = #I
@@ -98,29 +118,43 @@ function InitCalendar()
     ID.submit = #I
     I[#I + 1] = { F.DI_TEXT, 0, 16, 0, 16, 0, 0, 0, F.DIF_SEPARATOR, "" }
 
+    CF[ID.yearInc] = Colors.Disabled
+    CF[ID.yearDec] = Colors.Disabled
+    CF[ID.monthInc] = Colors.Disabled
+    CF[ID.monthDec] = Colors.Disabled
+    CF[ID.text] = Colors.Selected
+
     local function Redraw(hDlg)
-        far.SendDlgMessage(hDlg, "DM_ENABLEREDRAW", 0)
         isRendering = true
+        far.SendDlgMessage(hDlg, "DM_ENABLEREDRAW", 0)
         far.SendDlgMessage(hDlg, "DM_SETTEXT", ID.year, dt:fmt("%Y"))
         far.SendDlgMessage(hDlg, "DM_LISTSETCURPOS", ID.month, { SelectPos = dt:getmonth() })
 
         local day = date(dt:getyear(), dt:getmonth(), 1)
         day:adddays(-(day:getisoweekday() == 1 and 7 or day:getisoweekday() - 1))
 
-        tableSelected = nil
         for w = 0, 5 do
             for d = 1, 7 do
                 local dayFormat = " %2s "
                 local currentId = w * 7 + d
-                if day:getyear() == today:getyear() and day:getmonth() == today:getmonth() and day:getday() == today:getday() then
+                local id = ID.table + currentId
+
+                if day:getmonth() == dt:getmonth() and day:getday() == dt:getday() then
+                    CF[id] = Colors.Selected
                     dayFormat = "[%2s]"
-                    tableSelected = tableSelected or currentId
-                elseif day:getmonth() == dt:getmonth() and day:getday() == dt:getday() then
-                    dayFormat = "{%2s}"
                     tableSelected = currentId
+                elseif day:getyear() == today:getyear() and day:getmonth() == today:getmonth() and day:getday() == today:getday() then
+                    CF[id] = Colors.Today
+                elseif day:getmonth() ~= dt:getmonth() then
+                    CF[id] = Colors.Disabled
+                elseif d > 5 then
+                    CF[id] = Colors.Weekend
+                else
+                    CF[id] = Colors.Normal
                 end
-                far.SendDlgMessage(hDlg, "DM_ENABLE", ID.table + currentId, day:getmonth() == dt:getmonth() and 1 or 0)
-                far.SendDlgMessage(hDlg, "DM_SETTEXT", ID.table + currentId, fmt(dayFormat, day:getday()))
+
+                far.SendDlgMessage(hDlg, "DM_ENABLE", id, day:getmonth() == dt:getmonth() and 1 or 0)
+                far.SendDlgMessage(hDlg, "DM_SETTEXT", id, fmt(dayFormat, day:getday()))
                 day:adddays(1)
             end
         end
@@ -128,12 +162,24 @@ function InitCalendar()
         far.SendDlgMessage(hDlg, "DM_LISTSETCURPOS", ID.weeks, { SelectPos = Settings.Weeks })
         far.SendDlgMessage(hDlg, "DM_SETTEXT", ID.text, dt:fmt(Formats[Settings.Format]))
         far.SendDlgMessage(hDlg, "DM_SETTEXT", ID.textAdd, dt:fmt(Weeks[Settings.Weeks]))
-        isRendering = false
         far.SendDlgMessage(hDlg, "DM_ENABLEREDRAW", 1)
+        isRendering = false
+    end
+
+    local function DlgGetItemColor(hDlg, Param1, Color)
+        if Param1 == ID.month or Param1 == ID.format or Param1 == ID.weeks then
+            Color[3] = Color[1]
+            return Color
+        elseif CF[Param1] then
+            Color[1].ForegroundColor = CF[Param1]
+            return Color
+        end
     end
 
     local function DlgProc(hDlg, Msg, Param1, Param2)
-        if isRendering then
+        if Msg == F.DN_CTLCOLORDLGITEM then
+            return DlgGetItemColor(hDlg, Param1, Param2)
+        elseif isRendering then
             return
         elseif Msg == F.DN_INITDIALOG then
             Redraw(hDlg)
