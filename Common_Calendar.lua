@@ -51,11 +51,6 @@ local F = far.Flags
 local date = require("date")
 local fmt = string.format
 local band = bit.band
-local bor = bit.bor
-
-local function setFg(color, val) return bor(band(color, 0x0F), band(val, 0xF)) end
-
-local function setBg(color, val) return bor(band(color, 0xF0), band(val, 0xF)) end
 
 function InitCalendar()
     local Settings = mf.mload("dimfish", "Calendar") or { Format = 1, Weeks = 1 }
