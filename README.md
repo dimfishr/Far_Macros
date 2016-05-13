@@ -2,7 +2,7 @@
 
 Calendar FAR macro
 
-![alt text](http://i80.fastpic.ru/big/2016/0513/f9/6e7b81bec378ab858f941d53eee659f9.png "Calendar")
+![alt text](http://i80.fastpic.ru/big/2016/0513/b7/8db392166f7effe7e303be8c39b78fb7.png "Calendar")
 
 ##Features:
 
