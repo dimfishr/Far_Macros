@@ -59,10 +59,9 @@ local F = far.Flags
 local date = require("date")
 local fmt = string.format
 local band = bit.band
-local osdate = os.date
 local tonumber = tonumber
 
-local function ParseDate(format, text)
+local function ParseDateFormat(format, text)
     local months = { jan = 1, feb = 2, mar = 3, apr = 4, may = 5, jun = 6, jul = 7, aug = 8, sep = 9, oct = 10, nov = 11, dec = 12 }
     local _, dp, mp, yp, arr, yy, mm, dd, isMonthText
 
@@ -103,7 +102,18 @@ local function ParseDate(format, text)
         yy = (tonumber(yy) > 40 and 19 or 20) .. yy
     end
 
-    return tonumber(yy), tonumber(mm), tonumber(dd)
+    local ok, dateObj = pcall(date, tonumber(yy), tonumber(mm), tonumber(dd))
+    return ok and dateObj or nil
+end
+
+local function ParseDate(format, text)
+    local ok
+    local dateObj = ParseDateFormat(format, text)
+    if not dateObj then
+        ok, dateObj = pcall(date, text)
+        dateObj = ok and dateObj or nil
+    end
+    return dateObj
 end
 
 local function ExecCalendar()
@@ -246,15 +256,14 @@ local function ExecCalendar()
         return Color
     end
 
-    -- Not all formats are supported, see https://github.com/LuaDist/luadate/blob ... te.doc.htm
+    -- Not all formats are supported, see https://github.com/LuaDist/luadate/blob/master/date.doc.htm
     local function SetDate(hDlg)
-        local y, m, d = ParseDate(Formats[Settings.Format], GetDateText(hDlg))
-        if y and m and d then
-            dt:setyear(y, m, d)
+        local dateObj = ParseDate(Formats[Settings.Format], GetDateText(hDlg))
+        if dateObj then
+            dt = dateObj
             return true
-        else
-            return false
         end
+        return false
     end
 
     local function DlgProc(hDlg, Msg, Param1, Param2)
@@ -308,6 +317,8 @@ local function ExecCalendar()
             elseif Param1 == ID.copyDate then
                 far.CopyToClipboard(GetDateText(hDlg))
                 Text = "" -- do not print
+            else
+                return
             end
             Redraw(hDlg)
         elseif Msg == F.DN_CONTROLINPUT then
@@ -322,8 +333,11 @@ local function ExecCalendar()
                     dt:addyears(1)
                 elseif Param2.VirtualKeyCode == VK.Down then
                     dt:addmonths(1)
-                elseif Param2.VirtualKeyCode == VK.Ins or Param2.VirtualKeyCode == VK.C then
+                elseif Param1 ~= ID.textDate and Param2.VirtualKeyCode == VK.Ins or Param2.VirtualKeyCode == VK.C then
                     far.CopyToClipboard(GetDateText(hDlg))
+                    return
+                else
+                    return
                 end
                 Redraw(hDlg)
             elseif Param1 == ID.userControl then
@@ -337,6 +351,8 @@ local function ExecCalendar()
                     dt:adddays(7)
                 elseif Param2.ButtonState == 1 then
                     dt:adddays(math.floor(Param2.MousePositionX / 4) + Param2.MousePositionY * 7 + 1 - tableSelected)
+                else
+                    return
                 end
                 Redraw(hDlg)
             elseif Param1 == ID.textDate and Param2.VirtualKeyCode == VK.Enter then
