@@ -2,11 +2,13 @@
 
 Calendar FAR macro
 
-![alt text](http://i80.fastpic.ru/big/2016/0513/b7/8db392166f7effe7e303be8c39b78fb7.png "Calendar")
+![alt text](http://i78.fastpic.ru/big/2016/0516/55/c7a951c0be646916f56f82bfc56eb555.png "Calendar")
 
 ##Features:
 
+* Date parse by selected format
 * Hotkeys: Ctrl+Arrows +/- Month/Year
+* Hotkeys: Ctrl+Ins, Ctrl+C - copy to clipboard
 * Format Abbreviations:
 	* **%b**	Abbreviated month name (Dec)
 	* **%d**	The day of the month as a number (range 1 - 31)
