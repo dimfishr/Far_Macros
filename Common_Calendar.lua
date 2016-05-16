@@ -30,31 +30,83 @@ local Colors = {
     Disabled = 0x8,
 }
 
-
+-- See http://www.omniglot.com/language/time/days.htm, http://www.omniglot.com/language/time/months.htm
 local function Localization()
     if far.lang == "Russian" then
         return {
             Title = "Календарь";
             DaysOfWeek = { "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс" };
-            Months = { "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь" };
-            Ok = "Вставить";
+            Months = { "&Январь", "&Февраль", "&Март", "&Апрель", "Ма&й", "И&юнь", "Ию&ль", "Ав&густ", "&Сентябрь", "&Октябрь", "&Ноябрь", "&Декабрь" };
+            Year = '&Г:'; Month = '&М:'; DateFormat = '&Ф:'; DayWeekNumFmt = '&Н:'; FormattedDate = '&Д:';
+            Today = "&Сегодня"; Select = '&Выберите:'; Refresh = "&Обновить"; Insert = "Вставить"; Copy = "&Копировать";
         }
     else
         return {
             Title = "Calendar";
             DaysOfWeek = { "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su" };
-            Months = { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
-            Ok = "Insert";
+            Months = { "&January", "&February", "&March", "&April", "Ma&y", "Ju&ne", "Ju&ly", "Au&gust", "&September", "&October", "&November", "&December" };
+            Year = '&Y:'; Month = '&M:'; DateFormat = '&F:'; DayWeekNumFmt = '&N:'; FormattedDate = '&D:';
+            Today = "&Today"; Select = '&Select:'; Refresh = "&Refresh"; Insert = "Insert"; Copy = "&Copy";
         }
     end
 end
+
+local VK = { Enter = 13; Left = 37; Up = 38; Right = 39; Down = 40; Ins = 45, C = 67 }
+local leftOrRightCtrl = 0x0008 + 0x0004
+local leftOrRightAlt = 0x0001 + 0x0002
 
 local F = far.Flags
 local date = require("date")
 local fmt = string.format
 local band = bit.band
+local osdate = os.date
+local tonumber = tonumber
 
-function InitCalendar()
+local function ParseDate(format, text)
+    local months = { jan = 1, feb = 2, mar = 3, apr = 4, may = 5, jun = 6, jul = 7, aug = 8, sep = 9, oct = 10, nov = 11, dec = 12 }
+    local _, dp, mp, yp, arr, yy, mm, dd, isMonthText
+
+    isMonthText = format:find("%%b")
+    yp = format:find("%%[yY]")
+    mp = format:find("%%[mb]")
+    dp = format:find("%%d")
+
+    if not yp or not mp or not dp then
+        return nil
+    end
+
+    arr = { { pos = yp, sort = 1 }, { pos = mp, sort = 2 }, { pos = dp, sort = 3 } }
+    table.sort(arr, function(a, b) return (a.pos < b.pos) end)
+
+    format = format:gsub("%%[yYmd]", "(%%d+)"):gsub("%%b", "(%%a+)")
+    format = format:gsub("%-", "%%-"):gsub("%.", "%%."):gsub("%/", "%%/")
+
+    _, _, arr[1].val, arr[2].val, arr[3].val = string.find(text:lower(), format)
+
+    table.sort(arr, function(a, b) return (a.sort < b.sort) end)
+    yy = arr[1].val
+    mm = arr[2].val
+    dd = arr[3].val
+
+    if not yy or not mm or not dd then
+        return nil
+    end
+
+    if (isMonthText) then
+        mm = months[mm:sub(1, 3)]
+        if not mm then
+            return nil
+        end
+    end
+
+    if yy:len() == 2 then
+        yy = (tonumber(yy) > 40 and 19 or 20) .. yy
+    end
+
+    return tonumber(yy), tonumber(mm), tonumber(dd)
+end
+
+local function ExecCalendar()
     local Settings = mf.mload("dimfish", "Calendar") or { Format = 1, Weeks = 1 }
     local Text
     local today = date()
@@ -70,56 +122,74 @@ function InitCalendar()
     local ID = {}
     local CF = {}
 
-    I[#I + 1] = { F.DI_DOUBLEBOX, 3, 1, 32, 18, 0, 0, 0, 0, Localization().Title }
-    I[#I + 1] = { F.DI_BUTTON, 11, 2, 0, 2, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctl→" }
-    ID.yearInc = #I
-    I[#I + 1] = { F.DI_BUTTON, 18, 2, 0, 2, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl↑" }
-    ID.monthInc = #I
-    I[#I + 1] = { F.DI_FIXEDIT, 11, 3, 14, 3, 0, 0, "9999", F.DIF_MASKEDIT, "" }
-    ID.year = #I
-    I[#I + 1] = { F.DI_COMBOBOX, 16, 3, 24, 5, ComboMonths, 0, 0, F.DIF_DROPDOWNLIST, "" }
-    ID.month = #I
-    I[#I + 1] = { F.DI_BUTTON, 11, 4, 0, 4, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctl←" }
+    I[#I + 1] = { F.DI_DOUBLEBOX, 3, 1, 32, 19, 0, 0, 0, 0, Localization().Title }
+    I[#I + 1] = { F.DI_BUTTON, 7, 2, 0, 2, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl←" }
     ID.yearDec = #I
-    I[#I + 1] = { F.DI_BUTTON, 18, 4, 0, 4, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl↓" }
+    I[#I + 1] = { F.DI_TEXT, 5, 3, 0, 3, 0, 0, 0, 0, Localization().Year }
+    I[#I + 1] = { F.DI_FIXEDIT, 7, 3, 11, 3, 0, 0, "9999", F.DIF_MASKEDIT, "" }
+    ID.year = #I
+    I[#I + 1] = { F.DI_BUTTON, 7, 4, 0, 4, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl→" }
+    ID.yearInc = #I
+    I[#I + 1] = { F.DI_BUTTON, 15, 2, 0, 2, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl↑" }
     ID.monthDec = #I
+    I[#I + 1] = { F.DI_TEXT, 13, 3, 0, 3, 0, 0, 0, 0, Localization().Month }
+    -- FAR has Polish localization; Polish has “październik” (11 chars). Note: e.g. Moroccan Arabic has a 15-char month name
+    I[#I + 1] = { F.DI_COMBOBOX, 15, 3, 29, 5, ComboMonths, 0, 0, F.DIF_DROPDOWNLIST + F.DIF_LISTNOAMPERSAND + F.DIF_LISTAUTOHIGHLIGHT, "" }
+    ID.month = #I
+    I[#I + 1] = { F.DI_BUTTON, 15, 4, 0, 4, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl↓" }
+    ID.monthInc = #I
 
+    I[#I + 1] = { F.DI_TEXT, 20, 4, 30, 4, 0, 0, 0, F.DIF_RIGHTTEXT, Localization().Select }
     local row = 5
-    for d = 1, 7 do
-        I[#I + 1] = { F.DI_TEXT, d * 4 + 1, row, 0, row, 0, 0, 0, d > 5 and F.DIF_DISABLE or 0, Localization().DaysOfWeek[d] }
-        if d > 5 then
-            CF[#I] = Colors.Weekend
-        end
+    for d = 1, 7 do -- TODO make them buttons which jump to the date right below
+    I[#I + 1] = { F.DI_TEXT, d * 4 + 1, row, 0, row, 0, 0, 0, d > 5 and F.DIF_DISABLE or 0, Localization().DaysOfWeek[d] }
+    if d > 5 then
+        CF[#I] = Colors.Weekend
+    end
     end
     ID.table = #I
     for w = 0, 5 do
         for d = 1, 7 do
             I[#I + 1] = { F.DI_TEXT, d * 4, row + 1 + w, 0, row + 1 + w, 0, 0, 0, 0, "" }
-            if d > 5 then
-                CF[#I] = Colors.Weekend
-            end
         end
     end
 
     I[#I + 1] = { F.DI_USERCONTROL, 4, row + 1, 31, row + 6, 0, 0, 0, F.DIF_FOCUS }
     ID.userControl = #I
-    I[#I + 1] = { F.DI_COMBOBOX, 6, 13, 16, 13, ComboFormats, 0, 0, F.DIF_DROPDOWNLIST, "" }
+    I[#I + 1] = { F.DI_TEXT, 5, 13, 0, 13, 0, 0, 0, 0, Localization().DateFormat }
+    I[#I + 1] = { F.DI_COMBOBOX, 7, 13, 15, 13, ComboFormats, 0, 0, F.DIF_DROPDOWNLIST, "" }
     ID.format = #I
-    I[#I + 1] = { F.DI_COMBOBOX, 19, 13, 28, 13, ComboWeeks, 0, 0, F.DIF_DROPDOWNLIST, "" }
+    I[#I + 1] = { F.DI_TEXT, 18, 13, 0, 13, 0, 0, 0, 0, Localization().DayWeekNumFmt }
+    I[#I + 1] = { F.DI_COMBOBOX, 20, 13, 29, 13, ComboWeeks, 0, 0, F.DIF_DROPDOWNLIST, "" }
     ID.weeks = #I
-    I[#I + 1] = { F.DI_FIXEDIT, 6, 15, 16, 15, 0, 0, 0, F.DIF_READONLY, "" }
-    ID.text = #I
-    I[#I + 1] = { F.DI_TEXT, 19, 15, 28, 15, 0, 0, 0, 0, "" }
-    ID.textAdd = #I
-    I[#I + 1] = { F.DI_BUTTON, 0, 17, 0, 17, 0, 0, 0, F.DIF_DEFAULTBUTTON + F.DIF_CENTERGROUP, Localization().Ok }
-    ID.submit = #I
-    I[#I + 1] = { F.DI_TEXT, 0, 16, 0, 16, 0, 0, 0, F.DIF_SEPARATOR, "" }
+    I[#I + 1] = { F.DI_TEXT, 5, 15, 0, 15, 0, 0, 0, 0, Localization().FormattedDate }
+    I[#I + 1] = { F.DI_EDIT, 7, 15, 18, 15, 0, 0, 0, F.DIF_SELECTONENTRY, "" }
+    ID.textDate = #I
+    I[#I + 1] = { F.DI_TEXT, 20, 15, 29, 15, 0, 0, 0, 0, "" }
+    ID.textNums = #I
+    I[#I + 1] = { F.DI_BUTTON, 7, 16, 17, 16, 0, 0, 0, F.DIF_BTNNOCLOSE, Localization().Refresh }
+    ID.parse = #I
+    I[#I + 1] = { F.DI_BUTTON, 20, 16, 29, 16, 0, 0, 0, F.DIF_BTNNOCLOSE, Localization().Today }
+    ID.today = #I
+    I[#I + 1] = { F.DI_TEXT, 0, 17, 0, 16, 0, 0, 0, F.DIF_SEPARATOR, "" }
+    I[#I + 1] = { F.DI_BUTTON, 0, 18, 0, 18, 0, 0, 0, F.DIF_CENTERGROUP + F.DIF_DEFAULTBUTTON, Localization().Insert }
+    ID.insert = #I
+    I[#I + 1] = { F.DI_BUTTON, 0, 18, 0, 18, 0, 0, 0, F.DIF_CENTERGROUP, Localization().Copy }
+    ID.copyDate = #I
 
     CF[ID.yearInc] = Colors.Disabled
     CF[ID.yearDec] = Colors.Disabled
     CF[ID.monthInc] = Colors.Disabled
     CF[ID.monthDec] = Colors.Disabled
-    CF[ID.text] = Colors.Selected
+    CF[ID.textDate] = Colors.Selected
+
+    local function GetDateText(hDlg)
+        return far.SendDlgMessage(hDlg, "DM_GETTEXT", ID.textDate, nil)
+    end
+
+    local function UpdateControlsState(hDlg)
+        far.SendDlgMessage(hDlg, "DM_ENABLE", ID.parse, ParseDate(Formats[Settings.Format], GetDateText(hDlg)) and 1 or 0)
+    end
 
     local function Redraw(hDlg)
         isRendering = true
@@ -157,31 +227,45 @@ function InitCalendar()
         end
         far.SendDlgMessage(hDlg, "DM_LISTSETCURPOS", ID.format, { SelectPos = Settings.Format })
         far.SendDlgMessage(hDlg, "DM_LISTSETCURPOS", ID.weeks, { SelectPos = Settings.Weeks })
-        far.SendDlgMessage(hDlg, "DM_SETTEXT", ID.text, dt:fmt(Formats[Settings.Format]))
-        far.SendDlgMessage(hDlg, "DM_SETTEXT", ID.textAdd, dt:fmt(Weeks[Settings.Weeks]))
+        far.SendDlgMessage(hDlg, "DM_SETTEXT", ID.textDate, dt:fmt(Formats[Settings.Format]))
+        far.SendDlgMessage(hDlg, "DM_SETTEXT", ID.textNums, dt:fmt(Weeks[Settings.Weeks]))
+
+        UpdateControlsState(hDlg)
         far.SendDlgMessage(hDlg, "DM_ENABLEREDRAW", 1)
         isRendering = false
     end
 
-    local function DlgGetItemColor(hDlg, Param1, Color)
-        if Param1 == ID.month or Param1 == ID.format or Param1 == ID.weeks then
-            Color[3] = Color[1]
-            return Color
-        elseif CF[Param1] then
+    local function GetItemColor(hDlg, Param1, Color)
+        local _ = hDlg -- suppress the "unused argument" warning
+        if CF[Param1] then
             Color[1].ForegroundColor = CF[Param1]
-            return Color
+        end
+        if Param1 == ID.month or Param1 == ID.format or Param1 == ID.weeks or Param1 == ID.textDate then
+            Color[3] = Color[1]
+        end
+        return Color
+    end
+
+    -- Not all formats are supported, see https://github.com/LuaDist/luadate/blob ... te.doc.htm
+    local function SetDate(hDlg)
+        local y, m, d = ParseDate(Formats[Settings.Format], GetDateText(hDlg))
+        if y and m and d then
+            dt:setyear(y, m, d)
+            return true
+        else
+            return false
         end
     end
 
     local function DlgProc(hDlg, Msg, Param1, Param2)
         if Msg == F.DN_CTLCOLORDLGITEM then
-            return DlgGetItemColor(hDlg, Param1, Param2)
+            return GetItemColor(hDlg, Param1, Param2)
         elseif isRendering then
             return
         elseif Msg == F.DN_INITDIALOG then
             Redraw(hDlg)
-        elseif Param1 == ID.submit then
-            Text = far.SendDlgMessage(hDlg, "DM_GETTEXT", ID.text, nil)
+        elseif Param1 == ID.insert then
+            Text = GetDateText(hDlg)
         elseif Param1 == -1 then
             Text = ""
         elseif Msg == F.DN_EDITCHANGE then
@@ -205,6 +289,8 @@ function InitCalendar()
                 Settings.Weeks = (far.SendDlgMessage(hDlg, "DM_LISTGETCURPOS", Param1, nil)).SelectPos
                 mf.msave("dimfish", "Calendar", Settings)
                 Redraw(hDlg)
+            elseif Param1 == ID.textDate then
+                UpdateControlsState(hDlg)
             end
         elseif Msg == F.DN_BTNCLICK then
             if Param1 == ID.yearDec then
@@ -215,44 +301,59 @@ function InitCalendar()
                 dt:addmonths(-1)
             elseif Param1 == ID.monthInc then
                 dt:addmonths(1)
+            elseif Param1 == ID.parse then
+                SetDate(hDlg)
+            elseif Param1 == ID.today then
+                dt = date()
+            elseif Param1 == ID.copyDate then
+                far.CopyToClipboard(GetDateText(hDlg))
+                Text = "" -- do not print
             end
             Redraw(hDlg)
         elseif Msg == F.DN_CONTROLINPUT then
-            if Param1 ~= ID.month and Param1 ~= ID.format and Param1 ~= ID.weeks and
-                    Param2.ControlKeyState and band(Param2.ControlKeyState, 0x0008 + 0x0004) ~= 0 then
-                if Param2.VirtualKeyCode == 37 then
+            if Param1 ~= ID.month and Param1 ~= ID.format and Param1 ~= ID.weeks and Param2.ControlKeyState and
+                    band(Param2.ControlKeyState, leftOrRightCtrl) ~= 0 and
+                    band(Param2.ControlKeyState, leftOrRightAlt) == 0 then
+                if Param2.VirtualKeyCode == VK.Left then
                     dt:addyears(-1)
-                elseif Param2.VirtualKeyCode == 38 then
-                    dt:addmonths(1)
-                elseif Param2.VirtualKeyCode == 39 then
-                    dt:addyears(1)
-                elseif Param2.VirtualKeyCode == 40 then
+                elseif Param2.VirtualKeyCode == VK.Up then
                     dt:addmonths(-1)
+                elseif Param2.VirtualKeyCode == VK.Right then
+                    dt:addyears(1)
+                elseif Param2.VirtualKeyCode == VK.Down then
+                    dt:addmonths(1)
+                elseif Param2.VirtualKeyCode == VK.Ins or Param2.VirtualKeyCode == VK.C then
+                    far.CopyToClipboard(GetDateText(hDlg))
                 end
                 Redraw(hDlg)
             elseif Param1 == ID.userControl then
-                if Param2.VirtualKeyCode == 37 then
+                if Param2.VirtualKeyCode == VK.Left then
                     dt:adddays(-1)
-                elseif Param2.VirtualKeyCode == 38 then
+                elseif Param2.VirtualKeyCode == VK.Up then
                     dt:adddays(-7)
-                elseif Param2.VirtualKeyCode == 39 then
+                elseif Param2.VirtualKeyCode == VK.Right then
                     dt:adddays(1)
-                elseif Param2.VirtualKeyCode == 40 then
+                elseif Param2.VirtualKeyCode == VK.Down then
                     dt:adddays(7)
                 elseif Param2.ButtonState == 1 then
                     dt:adddays(math.floor(Param2.MousePositionX / 4) + Param2.MousePositionY * 7 + 1 - tableSelected)
                 end
                 Redraw(hDlg)
+            elseif Param1 == ID.textDate and Param2.VirtualKeyCode == VK.Enter then
+                if SetDate(hDlg) then
+                    Redraw(hDlg)
+                end
+                return true -- don't pass the keypress to the standard handler
             end
         end
     end
 
     local guid = win.Uuid("06a13b89-3fec-46a2-be11-a50b68ceaa56")
-    far.Dialog(guid, -1, -1, 36, 20, nil, I, nil, DlgProc)
+    far.Dialog(guid, -1, -1, 36, 21, nil, I, nil, DlgProc)
     if Text then print(Text) end
 end
 
 Macro {
     area = "Common"; key = Key; description = Localization().Title; flags = "";
-    action = InitCalendar;
+    action = ExecCalendar;
 }
