@@ -256,7 +256,7 @@ local function ExecCalendar()
         return Color
     end
 
-    -- Not all formats are supported, see https://github.com/LuaDist/luadate/blob/master/date.doc.htm
+    -- Not all formats are supported, see https://tieske.github.io/date/
     local function SetDate(hDlg)
         local dateObj = ParseDate(Formats[Settings.Format], GetDateText(hDlg))
         if dateObj then
