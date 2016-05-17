@@ -16,7 +16,7 @@ local Formats = {
     "%d-%b-%Y",
 }
 
-local Weeks = {
+local Info = {
     "[%U] [%j]",
     "[%V] [%j]",
     "[%W] [%j]",
@@ -143,7 +143,7 @@ local function setmonthFix(dateObj, m)
 end
 
 local function ExecCalendar()
-    local Settings = mf.mload("dimfish", "Calendar") or { Format = Formats[1], Weeks = 1 }
+    local Settings = mf.mload("dimfish", "Calendar") or { Format = Formats[1], Info = Info[1] }
     local Text
     local today = date()
     local dt = date()
@@ -151,7 +151,6 @@ local function ExecCalendar()
     local isRendering = false
 
     local ComboMonths = {} for i = 1, 12 do ComboMonths[i] = { Text = Localization().Months[i] } end
-    local ComboWeeks = {} for i = 1, #Weeks do ComboWeeks[i] = { Text = Weeks[i] } end
 
     local I = {}
     local ID = {}
@@ -194,16 +193,16 @@ local function ExecCalendar()
     I[#I + 1] = { F.DI_USERCONTROL, 4, row + 1, 31, row + 6, 0, 0, 0, F.DIF_FOCUS }
     ID.userControl = #I
     I[#I + 1] = { F.DI_TEXT, 5, 13, 0, 13, 0, 0, 0, 0, Localization().DateFormat }
-    I[#I + 1] = { F.DI_EDIT, 7, 13, 15, 13, 0, 0, 0, F.DIF_HISTORY, Settings.Format }
+    I[#I + 1] = { F.DI_EDIT, 7, 13, 15, 13, 0, "Format", 0, F.DIF_HISTORY, Settings.Format }
     ID.format = #I
     I[#I + 1] = { F.DI_TEXT, 18, 13, 0, 13, 0, 0, 0, 0, Localization().DayWeekNumFmt }
-    I[#I + 1] = { F.DI_COMBOBOX, 20, 13, 29, 13, ComboWeeks, 0, 0, F.DIF_DROPDOWNLIST, nil }
-    ID.weeks = #I
+    I[#I + 1] = { F.DI_EDIT, 20, 13, 29, 13, 0, "Info", 0, F.DIF_HISTORY, Settings.Info }
+    ID.info = #I
     I[#I + 1] = { F.DI_TEXT, 5, 15, 0, 15, 0, 0, 0, 0, Localization().FormattedDate }
     I[#I + 1] = { F.DI_EDIT, 7, 15, 18, 15, 0, 0, 0, F.DIF_SELECTONENTRY, "" }
     ID.textDate = #I
     I[#I + 1] = { F.DI_TEXT, 20, 15, 29, 15, 0, 0, 0, 0, "" }
-    ID.textNums = #I
+    ID.textInfo = #I
     I[#I + 1] = { F.DI_BUTTON, 7, 16, 17, 16, 0, 0, 0, F.DIF_BTNNOCLOSE, Localization().Refresh }
     ID.parse = #I
     I[#I + 1] = { F.DI_BUTTON, 20, 16, 29, 16, 0, 0, 0, F.DIF_BTNNOCLOSE, Localization().Today }
@@ -275,10 +274,9 @@ local function ExecCalendar()
                 day:adddays(1)
             end
         end
-        far.SendDlgMessage(hDlg, "DM_LISTSETCURPOS", ID.weeks, { SelectPos = Settings.Weeks })
-        far.SendDlgMessage(hDlg, "DM_SETTEXT", ID.textDate, dt:fmt(Settings.Format))
         far.SendDlgMessage(hDlg, "DM_SETTEXT", ID.title, dt:fmt(Settings.Format))
-        far.SendDlgMessage(hDlg, "DM_SETTEXT", ID.textNums, dt:fmt(Weeks[Settings.Weeks]))
+        far.SendDlgMessage(hDlg, "DM_SETTEXT", ID.textDate, dt:fmt(Settings.Format))
+        far.SendDlgMessage(hDlg, "DM_SETTEXT", ID.textInfo, dt:fmt(Settings.Info))
 
         UpdateControlsState(hDlg)
         far.SendDlgMessage(hDlg, "DM_ENABLEREDRAW", 1)
@@ -290,7 +288,7 @@ local function ExecCalendar()
         if CF[Param1] then
             Color[1].ForegroundColor = CF[Param1]
         end
-        if Param1 == ID.month or Param1 == ID.format or Param1 == ID.weeks or Param1 == ID.textDate then
+        if Param1 == ID.month or Param1 == ID.format or Param1 == ID.info or Param1 == ID.textDate then
             Color[3] = Color[1]
         end
         return Color
@@ -316,6 +314,11 @@ local function ExecCalendar()
                 far.SendDlgMessage(hDlg, "DM_ADDHISTORY", ID.format, Formats[i], i)
             end
             far.SendDlgMessage(hDlg, "DM_ADDHISTORY", ID.format, Settings.Format, 1)
+
+            for i = 1, #Info do
+                far.SendDlgMessage(hDlg, "DM_ADDHISTORY", ID.info, Info[i], i)
+            end
+            far.SendDlgMessage(hDlg, "DM_ADDHISTORY", ID.info, Settings.Info, 1)
             Redraw(hDlg)
         elseif Param1 == ID.insert then
             Text = GetDateText(hDlg)
@@ -338,8 +341,8 @@ local function ExecCalendar()
                 Settings.Format = far.SendDlgMessage(hDlg, "DM_GETTEXT", Param1, nil)
                 mf.msave("dimfish", "Calendar", Settings)
                 Redraw(hDlg)
-            elseif Param1 == ID.weeks then
-                Settings.Weeks = (far.SendDlgMessage(hDlg, "DM_LISTGETCURPOS", Param1, nil)).SelectPos
+            elseif Param1 == ID.info then
+                Settings.Info = far.SendDlgMessage(hDlg, "DM_GETTEXT", Param1, nil)
                 mf.msave("dimfish", "Calendar", Settings)
                 Redraw(hDlg)
             elseif Param1 == ID.textDate then
@@ -369,7 +372,7 @@ local function ExecCalendar()
             end
             Redraw(hDlg)
         elseif Msg == F.DN_CONTROLINPUT then
-            if Param1 ~= ID.month and Param1 ~= ID.format and Param1 ~= ID.weeks and Param2.ControlKeyState and
+            if Param1 ~= ID.month and Param1 ~= ID.format and Param1 ~= ID.info and Param2.ControlKeyState and
                     band(Param2.ControlKeyState, leftOrRightCtrl) ~= 0 and
                     band(Param2.ControlKeyState, leftOrRightAlt) == 0 then
                 if Param2.VirtualKeyCode == VK.Left then
