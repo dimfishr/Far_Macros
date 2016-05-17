@@ -123,6 +123,24 @@ local function ParseDate(format, text)
     return dateObj
 end
 
+local function addmonthsFix(dateObj, m)
+    local d = dateObj:getday()
+    dateObj:addmonths(m)
+    local dd = dateObj:getday()
+    if dd ~= d then
+        dateObj:adddays(-dd)
+    end
+end
+
+local function setmonthFix(dateObj, m)
+    local d = dateObj:getday()
+    dateObj:setmonth(m)
+    local dd = dateObj:getday()
+    if dd ~= d then
+        dateObj:adddays(-dd)
+    end
+end
+
 local function ExecCalendar()
     local Settings = mf.mload("dimfish", "Calendar") or { Format = Formats[1], Weeks = 1 }
     local Text
@@ -200,6 +218,7 @@ local function ExecCalendar()
     CF[ID.monthInc] = Colors.Disabled
     CF[ID.monthDec] = Colors.Disabled
     CF[ID.textDate] = Colors.Selected
+    CF[ID.firstSu] = Colors.Weekend
 
 
     local function GetDateText(hDlg)
@@ -311,7 +330,7 @@ local function ExecCalendar()
             elseif Param1 == ID.month then
                 local selM = (far.SendDlgMessage(hDlg, "DM_LISTGETCURPOS", Param1, nil)).SelectPos
                 if selM ~= dt:getmonth() then
-                    dt:setmonth(selM)
+                    setmonthFix(dt, selM)
                     Redraw(hDlg)
                 end
             elseif Param1 == ID.format then
@@ -331,9 +350,9 @@ local function ExecCalendar()
             elseif Param1 == ID.yearInc then
                 dt:addyears(1)
             elseif Param1 == ID.monthDec then
-                dt:addmonths(-1)
+                addmonthsFix(dt, -1)
             elseif Param1 == ID.monthInc then
-                dt:addmonths(1)
+                addmonthsFix(dt, 1)
             elseif Param1 == ID.parse then
                 SetDate(hDlg)
             elseif Param1 == ID.today then
@@ -355,11 +374,11 @@ local function ExecCalendar()
                 if Param2.VirtualKeyCode == VK.Left then
                     dt:addyears(-1)
                 elseif Param2.VirtualKeyCode == VK.Up then
-                    dt:addmonths(-1)
+                    addmonthsFix(dt, -1)
                 elseif Param2.VirtualKeyCode == VK.Right then
                     dt:addyears(1)
                 elseif Param2.VirtualKeyCode == VK.Down then
-                    dt:addmonths(1)
+                    addmonthsFix(dt, 1)
                 elseif Param1 ~= ID.textDate and Param2.VirtualKeyCode == VK.Ins or Param2.VirtualKeyCode == VK.C then
                     far.CopyToClipboard(GetDateText(hDlg))
                     return
