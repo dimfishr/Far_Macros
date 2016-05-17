@@ -35,7 +35,7 @@ local function Localization()
     if far.lang == "Russian" then
         return {
             Title = "Календарь";
-            DaysOfWeek = { "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс" };
+            DaysOfWeek = { "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс" }; Mon = "Пн"; Sun = "Вс";
             Months = { "&Январь", "&Февраль", "&Март", "&Апрель", "Ма&й", "И&юнь", "Ию&ль", "Ав&густ", "&Сентябрь", "&Октябрь", "&Ноябрь", "&Декабрь" };
             Year = '&Г:'; Month = '&М:'; DateFormat = '&Ф:'; DayWeekNumFmt = '&Н:'; FormattedDate = '&Д:';
             Today = "&Сегодня"; Select = '&Выберите:'; Refresh = "&Обновить"; Insert = "Вставить"; Copy = "&Копировать";
@@ -43,7 +43,7 @@ local function Localization()
     else
         return {
             Title = "Calendar";
-            DaysOfWeek = { "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su" };
+            DaysOfWeek = { "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su" }; Mon = "M&o"; Sun = "S&u";
             Months = { "&January", "&February", "&March", "&April", "Ma&y", "Ju&ne", "Ju&ly", "Au&gust", "&September", "&October", "&November", "&December" };
             Year = '&Y:'; Month = '&M:'; DateFormat = '&F:'; DayWeekNumFmt = '&N:'; FormattedDate = '&D:';
             Today = "&Today"; Select = '&Select:'; Refresh = "&Refresh"; Insert = "Insert"; Copy = "&Copy";
@@ -174,9 +174,9 @@ local function ExecCalendar()
     ID.month = #I
     I[#I + 1] = { F.DI_BUTTON, 15, 4, 0, 4, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl↓" }
     ID.monthInc = #I
-    I[#I + 1] = { F.DI_RADIOBUTTON, 25, 2, 0, 2, Settings.FirstSunday and 0 or 1, 0, 0, 0, Localization().DaysOfWeek[1] }
+    I[#I + 1] = { F.DI_RADIOBUTTON, 25, 2, 0, 2, Settings.FirstSunday and 0 or 1, 0, 0, 0, Localization().Mon }
     ID.firstMo = #I
-    I[#I + 1] = { F.DI_RADIOBUTTON, 25, 3, 0, 3, Settings.FirstSunday and 1 or 0, 0, 0, 0, Localization().DaysOfWeek[7] }
+    I[#I + 1] = { F.DI_RADIOBUTTON, 25, 3, 0, 3, Settings.FirstSunday and 1 or 0, 0, 0, 0, Localization().Sun }
     ID.firstSu = #I
 
     I[#I + 1] = { F.DI_TEXT, 20, 4, 30, 4, 0, 0, 0, F.DIF_RIGHTTEXT, Localization().Select }
