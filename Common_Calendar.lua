@@ -37,7 +37,7 @@ local function Localization()
             Title = "Календарь";
             DaysOfWeek = { "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс" }; Mon = "Пн"; Sun = "Вс";
             Months = { "&Январь", "&Февраль", "&Март", "&Апрель", "Ма&й", "И&юнь", "Ию&ль", "Ав&густ", "&Сентябрь", "&Октябрь", "&Ноябрь", "&Декабрь" };
-            Year = '&Г:'; Month = '&М:'; DateFormat = '&Ф:'; DayWeekNumFmt = '&Н:'; FormattedDate = '&Д:';
+            Year = '&Г:'; Month = '&М:'; DateFormat = '&Ф:'; Info = '&И:'; FormattedDate = '&Д:';
             Today = "&Сегодня"; Select = '&Выберите:'; Refresh = "&Обновить"; Insert = "Вставить"; Copy = "&Копировать";
         }
     else
@@ -45,7 +45,7 @@ local function Localization()
             Title = "Calendar";
             DaysOfWeek = { "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su" }; Mon = "M&o"; Sun = "S&u";
             Months = { "&January", "&February", "&March", "&April", "Ma&y", "Ju&ne", "Ju&ly", "Au&gust", "&September", "&October", "&November", "&December" };
-            Year = '&Y:'; Month = '&M:'; DateFormat = '&F:'; DayWeekNumFmt = '&N:'; FormattedDate = '&D:';
+            Year = '&Y:'; Month = '&M:'; DateFormat = '&F:'; Info = '&I:'; FormattedDate = '&D:';
             Today = "&Today"; Select = '&Select:'; Refresh = "&Refresh"; Insert = "Insert"; Copy = "&Copy";
         }
     end
@@ -195,7 +195,7 @@ local function ExecCalendar()
     I[#I + 1] = { F.DI_TEXT, 5, 13, 0, 13, 0, 0, 0, 0, Localization().DateFormat }
     I[#I + 1] = { F.DI_EDIT, 7, 13, 15, 13, 0, "Format", 0, F.DIF_HISTORY, Settings.Format }
     ID.format = #I
-    I[#I + 1] = { F.DI_TEXT, 18, 13, 0, 13, 0, 0, 0, 0, Localization().DayWeekNumFmt }
+    I[#I + 1] = { F.DI_TEXT, 18, 13, 0, 13, 0, 0, 0, 0, Localization().Info }
     I[#I + 1] = { F.DI_EDIT, 20, 13, 29, 13, 0, "Info", 0, F.DIF_HISTORY, Settings.Info }
     ID.info = #I
     I[#I + 1] = { F.DI_TEXT, 5, 15, 0, 15, 0, 0, 0, 0, Localization().FormattedDate }
