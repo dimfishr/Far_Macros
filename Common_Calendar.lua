@@ -60,14 +60,17 @@ local date = require("date")
 local fmt = string.format
 local band = bit.band
 local tonumber = tonumber
+local floor = math.floor
+
+local function mod(n, d) return n - d * floor(n / d) end
 
 local function ParseDateFormat(format, text)
     local months = { jan = 1, feb = 2, mar = 3, apr = 4, may = 5, jun = 6, jul = 7, aug = 8, sep = 9, oct = 10, nov = 11, dec = 12 }
     local _, dp, mp, yp, arr, yy, mm, dd, isMonthText
 
-    isMonthText = format:find("%%b")
+    isMonthText = format:find("%%[bB]")
     yp = format:find("%%[yY]")
-    mp = format:find("%%[mb]")
+    mp = format:find("%%[mbB]")
     dp = format:find("%%d")
 
     if not yp or not mp or not dp then
@@ -77,7 +80,7 @@ local function ParseDateFormat(format, text)
     arr = { { pos = yp, sort = 1 }, { pos = mp, sort = 2 }, { pos = dp, sort = 3 } }
     table.sort(arr, function(a, b) return (a.pos < b.pos) end)
 
-    format = format:gsub("%%[yYmd]", "(%%d+)"):gsub("%%b", "(%%a+)")
+    format = format:gsub("%%[yYmd]", "(%%d+)"):gsub("%%[bB]", "(%%a+)")
     format = format:gsub("%-", "%%-"):gsub("%.", "%%."):gsub("%/", "%%/")
 
     _, _, arr[1].val, arr[2].val, arr[3].val = string.find(text:lower(), format)
@@ -107,6 +110,10 @@ local function ParseDateFormat(format, text)
 end
 
 local function ParseDate(format, text)
+    if not format or not text then
+        return nil
+    end
+
     local ok
     local dateObj = ParseDateFormat(format, text)
     if not dateObj then
@@ -117,7 +124,7 @@ local function ParseDate(format, text)
 end
 
 local function ExecCalendar()
-    local Settings = mf.mload("dimfish", "Calendar") or { Format = 1, Weeks = 1 }
+    local Settings = mf.mload("dimfish", "Calendar") or { Format = Formats[1], Weeks = 1 }
     local Text
     local today = date()
     local dt = date()
@@ -125,7 +132,6 @@ local function ExecCalendar()
     local isRendering = false
 
     local ComboMonths = {} for i = 1, 12 do ComboMonths[i] = { Text = Localization().Months[i] } end
-    local ComboFormats = {} for i = 1, #Formats do ComboFormats[i] = { Text = Formats[i] } end
     local ComboWeeks = {} for i = 1, #Weeks do ComboWeeks[i] = { Text = Weeks[i] } end
 
     local I = {}
@@ -133,6 +139,7 @@ local function ExecCalendar()
     local CF = {}
 
     I[#I + 1] = { F.DI_DOUBLEBOX, 3, 1, 32, 19, 0, 0, 0, 0, Localization().Title }
+    ID.title = #I
     I[#I + 1] = { F.DI_BUTTON, 7, 2, 0, 2, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl←" }
     ID.yearDec = #I
     I[#I + 1] = { F.DI_TEXT, 5, 3, 0, 3, 0, 0, 0, 0, Localization().Year }
@@ -144,18 +151,19 @@ local function ExecCalendar()
     ID.monthDec = #I
     I[#I + 1] = { F.DI_TEXT, 13, 3, 0, 3, 0, 0, 0, 0, Localization().Month }
     -- FAR has Polish localization; Polish has “październik” (11 chars). Note: e.g. Moroccan Arabic has a 15-char month name
-    I[#I + 1] = { F.DI_COMBOBOX, 15, 3, 29, 5, ComboMonths, 0, 0, F.DIF_DROPDOWNLIST + F.DIF_LISTNOAMPERSAND + F.DIF_LISTAUTOHIGHLIGHT, "" }
+    I[#I + 1] = { F.DI_COMBOBOX, 15, 3, 22, 3, ComboMonths, 0, 0, F.DIF_DROPDOWNLIST + F.DIF_LISTNOAMPERSAND + F.DIF_LISTAUTOHIGHLIGHT, "" }
     ID.month = #I
     I[#I + 1] = { F.DI_BUTTON, 15, 4, 0, 4, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl↓" }
     ID.monthInc = #I
+    I[#I + 1] = { F.DI_RADIOBUTTON, 25, 2, 0, 2, Settings.FirstSunday and 0 or 1, 0, 0, 0, Localization().DaysOfWeek[1] }
+    ID.firstMo = #I
+    I[#I + 1] = { F.DI_RADIOBUTTON, 25, 3, 0, 3, Settings.FirstSunday and 1 or 0, 0, 0, 0, Localization().DaysOfWeek[7] }
+    ID.firstSu = #I
 
     I[#I + 1] = { F.DI_TEXT, 20, 4, 30, 4, 0, 0, 0, F.DIF_RIGHTTEXT, Localization().Select }
     local row = 5
-    for d = 1, 7 do -- TODO make them buttons which jump to the date right below
-    I[#I + 1] = { F.DI_TEXT, d * 4 + 1, row, 0, row, 0, 0, 0, d > 5 and F.DIF_DISABLE or 0, Localization().DaysOfWeek[d] }
-    if d > 5 then
-        CF[#I] = Colors.Weekend
-    end
+    for d = 1, 7 do
+        I[#I + 1] = { F.DI_TEXT, d * 4 + 1, row, 0, row, 0, 0, 0, 0, "" }
     end
     ID.table = #I
     for w = 0, 5 do
@@ -167,10 +175,10 @@ local function ExecCalendar()
     I[#I + 1] = { F.DI_USERCONTROL, 4, row + 1, 31, row + 6, 0, 0, 0, F.DIF_FOCUS }
     ID.userControl = #I
     I[#I + 1] = { F.DI_TEXT, 5, 13, 0, 13, 0, 0, 0, 0, Localization().DateFormat }
-    I[#I + 1] = { F.DI_COMBOBOX, 7, 13, 15, 13, ComboFormats, 0, 0, F.DIF_DROPDOWNLIST, "" }
+    I[#I + 1] = { F.DI_EDIT, 7, 13, 15, 13, 0, 0, 0, F.DIF_HISTORY, Settings.Format }
     ID.format = #I
     I[#I + 1] = { F.DI_TEXT, 18, 13, 0, 13, 0, 0, 0, 0, Localization().DayWeekNumFmt }
-    I[#I + 1] = { F.DI_COMBOBOX, 20, 13, 29, 13, ComboWeeks, 0, 0, F.DIF_DROPDOWNLIST, "" }
+    I[#I + 1] = { F.DI_COMBOBOX, 20, 13, 29, 13, ComboWeeks, 0, 0, F.DIF_DROPDOWNLIST, nil }
     ID.weeks = #I
     I[#I + 1] = { F.DI_TEXT, 5, 15, 0, 15, 0, 0, 0, 0, Localization().FormattedDate }
     I[#I + 1] = { F.DI_EDIT, 7, 15, 18, 15, 0, 0, 0, F.DIF_SELECTONENTRY, "" }
@@ -193,12 +201,13 @@ local function ExecCalendar()
     CF[ID.monthDec] = Colors.Disabled
     CF[ID.textDate] = Colors.Selected
 
+
     local function GetDateText(hDlg)
         return far.SendDlgMessage(hDlg, "DM_GETTEXT", ID.textDate, nil)
     end
 
     local function UpdateControlsState(hDlg)
-        far.SendDlgMessage(hDlg, "DM_ENABLE", ID.parse, ParseDate(Formats[Settings.Format], GetDateText(hDlg)) and 1 or 0)
+        far.SendDlgMessage(hDlg, "DM_ENABLE", ID.parse, ParseDate(Settings.Format, GetDateText(hDlg)) and 1 or 0)
     end
 
     local function Redraw(hDlg)
@@ -208,7 +217,18 @@ local function ExecCalendar()
         far.SendDlgMessage(hDlg, "DM_LISTSETCURPOS", ID.month, { SelectPos = dt:getmonth() })
 
         local day = date(dt:getyear(), dt:getmonth(), 1)
-        day:adddays(-(day:getisoweekday() == 1 and 7 or day:getisoweekday() - 1))
+        if Settings.FirstSunday then
+            day:adddays(-(day:getweekday() == 1 and 7 or day:getweekday() - 1))
+        else
+            day:adddays(-(day:getisoweekday() == 1 and 7 or day:getisoweekday() - 1))
+        end
+
+        for d = 1, 7 do
+            local id = ID.table - 7 + (Settings.FirstSunday and mod(d, 7) + 1 or d)
+            far.SendDlgMessage(hDlg, "DM_SETTEXT", id, Localization().DaysOfWeek[d])
+            CF[id] = d > 5 and Colors.Weekend or nil
+        end
+
 
         for w = 0, 5 do
             for d = 1, 7 do
@@ -224,7 +244,7 @@ local function ExecCalendar()
                     CF[id] = Colors.Today
                 elseif day:getmonth() ~= dt:getmonth() then
                     CF[id] = Colors.Disabled
-                elseif d > 5 then
+                elseif ((Settings.FirstSunday and mod(d - 2, 7) + 1 or d)) > 5 then
                     CF[id] = Colors.Weekend
                 else
                     CF[id] = Colors.Normal
@@ -235,9 +255,9 @@ local function ExecCalendar()
                 day:adddays(1)
             end
         end
-        far.SendDlgMessage(hDlg, "DM_LISTSETCURPOS", ID.format, { SelectPos = Settings.Format })
         far.SendDlgMessage(hDlg, "DM_LISTSETCURPOS", ID.weeks, { SelectPos = Settings.Weeks })
-        far.SendDlgMessage(hDlg, "DM_SETTEXT", ID.textDate, dt:fmt(Formats[Settings.Format]))
+        far.SendDlgMessage(hDlg, "DM_SETTEXT", ID.textDate, dt:fmt(Settings.Format))
+        far.SendDlgMessage(hDlg, "DM_SETTEXT", ID.title, dt:fmt(Settings.Format))
         far.SendDlgMessage(hDlg, "DM_SETTEXT", ID.textNums, dt:fmt(Weeks[Settings.Weeks]))
 
         UpdateControlsState(hDlg)
@@ -258,7 +278,7 @@ local function ExecCalendar()
 
     -- Not all formats are supported, see https://tieske.github.io/date/
     local function SetDate(hDlg)
-        local dateObj = ParseDate(Formats[Settings.Format], GetDateText(hDlg))
+        local dateObj = ParseDate(Settings.Format, GetDateText(hDlg))
         if dateObj then
             dt = dateObj
             return true
@@ -272,6 +292,10 @@ local function ExecCalendar()
         elseif isRendering then
             return
         elseif Msg == F.DN_INITDIALOG then
+            for i = 1, #Formats do
+                far.SendDlgMessage(hDlg, "DM_ADDHISTORY", ID.format, Formats[i], i)
+            end
+            far.SendDlgMessage(hDlg, "DM_ADDHISTORY", ID.format, Settings.Format, 1)
             Redraw(hDlg)
         elseif Param1 == ID.insert then
             Text = GetDateText(hDlg)
@@ -291,7 +315,7 @@ local function ExecCalendar()
                     Redraw(hDlg)
                 end
             elseif Param1 == ID.format then
-                Settings.Format = (far.SendDlgMessage(hDlg, "DM_LISTGETCURPOS", Param1, nil)).SelectPos
+                Settings.Format = far.SendDlgMessage(hDlg, "DM_GETTEXT", Param1, nil)
                 mf.msave("dimfish", "Calendar", Settings)
                 Redraw(hDlg)
             elseif Param1 == ID.weeks then
@@ -317,6 +341,9 @@ local function ExecCalendar()
             elseif Param1 == ID.copyDate then
                 far.CopyToClipboard(GetDateText(hDlg))
                 Text = "" -- do not print
+            elseif Param1 == ID.firstSu or Param1 == ID.firstMo then
+                Settings.FirstSunday = far.SendDlgMessage(hDlg, "DM_GETCHECK", ID.firstSu, nil) == 1 and true or false
+                mf.msave("dimfish", "Calendar", Settings)
             else
                 return
             end
