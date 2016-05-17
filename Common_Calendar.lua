@@ -60,6 +60,7 @@ local date = require("date")
 local fmt = string.format
 local band = bit.band
 local tonumber = tonumber
+local tostring = tostring
 local floor = math.floor
 
 local function mod(n, d) return n - d * floor(n / d) end
@@ -115,7 +116,7 @@ local function ParseDate(format, text)
     end
 
     local ok
-    local dateObj = ParseDateFormat(format, text)
+    local dateObj = ParseDateFormat(tostring(format), text)
     if not dateObj then
         ok, dateObj = pcall(date, text)
         dateObj = ok and dateObj or nil
