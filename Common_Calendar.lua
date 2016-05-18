@@ -223,7 +223,6 @@ local function ExecCalendar()
     CF[ID.textDate] = Colors.Selected
     CF[ID.firstSu] = Colors.Weekend
 
-
     local function GetDateText(hDlg)
         return SendDlgMessage(hDlg, "DM_GETTEXT", ID.textDate, 0)
     end
@@ -366,6 +365,7 @@ local function ExecCalendar()
                 addmonthsFix(dt, 1)
             elseif Param1 == ID.parse then
                 SetDate(hDlg)
+                SendDlgMessage(hDlg, "DM_SETFOCUS", ID.userControl, 0)
             elseif Param1 == ID.today then
                 dt = date()
                 SendDlgMessage(hDlg, "DM_SETFOCUS", ID.userControl, 0)
