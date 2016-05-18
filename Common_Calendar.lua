@@ -56,12 +56,15 @@ local leftOrRightCtrl = 0x0008 + 0x0004
 local leftOrRightAlt = 0x0001 + 0x0002
 
 local F = far.Flags
-local date = require("date")
+local SendDlgMessage = far.SendDlgMessage
 local fmt = string.format
 local band = bit.band
 local tonumber = tonumber
 local tostring = tostring
 local floor = math.floor
+local sort = table.sort
+
+local date = require("date")
 
 local function mod(n, d) return n - d * floor(n / d) end
 
@@ -69,9 +72,9 @@ local function ParseDateFormat(format, text)
     local months = { jan = 1, feb = 2, mar = 3, apr = 4, may = 5, jun = 6, jul = 7, aug = 8, sep = 9, oct = 10, nov = 11, dec = 12 }
     local _, dp, mp, yp, arr, yy, mm, dd, isMonthText
 
-    isMonthText = format:find("%%[bB]")
+    isMonthText = format:find("%%[hbB]")
     yp = format:find("%%[yY]")
-    mp = format:find("%%[mbB]")
+    mp = format:find("%%[mhbB]")
     dp = format:find("%%d")
 
     if not yp or not mp or not dp then
@@ -79,14 +82,14 @@ local function ParseDateFormat(format, text)
     end
 
     arr = { { pos = yp, sort = 1 }, { pos = mp, sort = 2 }, { pos = dp, sort = 3 } }
-    table.sort(arr, function(a, b) return (a.pos < b.pos) end)
+    sort(arr, function(a, b) return (a.pos < b.pos) end)
 
-    format = format:gsub("%%[yYmd]", "(%%d+)"):gsub("%%[bB]", "(%%a+)")
+    format = format:gsub("%%[yYmd]", "(%%d+)"):gsub("%%[hbB]", "(%%a+)")
     format = format:gsub("%-", "%%-"):gsub("%.", "%%."):gsub("%/", "%%/")
 
     _, _, arr[1].val, arr[2].val, arr[3].val = string.find(text:lower(), format)
 
-    table.sort(arr, function(a, b) return (a.sort < b.sort) end)
+    sort(arr, function(a, b) return (a.sort < b.sort) end)
     yy = arr[1].val
     mm = arr[2].val
     dd = arr[3].val
@@ -222,18 +225,18 @@ local function ExecCalendar()
 
 
     local function GetDateText(hDlg)
-        return far.SendDlgMessage(hDlg, "DM_GETTEXT", ID.textDate, nil)
+        return SendDlgMessage(hDlg, "DM_GETTEXT", ID.textDate, 0)
     end
 
     local function UpdateControlsState(hDlg)
-        far.SendDlgMessage(hDlg, "DM_ENABLE", ID.parse, ParseDate(Settings.Format, GetDateText(hDlg)) and 1 or 0)
+        SendDlgMessage(hDlg, "DM_ENABLE", ID.parse, ParseDate(Settings.Format, GetDateText(hDlg)) and 1 or 0)
     end
 
     local function Redraw(hDlg)
         isRendering = true
-        far.SendDlgMessage(hDlg, "DM_ENABLEREDRAW", 0)
-        far.SendDlgMessage(hDlg, "DM_SETTEXT", ID.year, dt:fmt("%Y"))
-        far.SendDlgMessage(hDlg, "DM_LISTSETCURPOS", ID.month, { SelectPos = dt:getmonth() })
+        SendDlgMessage(hDlg, "DM_ENABLEREDRAW", 0)
+        SendDlgMessage(hDlg, "DM_SETTEXT", ID.year, dt:fmt("%Y"))
+        SendDlgMessage(hDlg, "DM_LISTSETCURPOS", ID.month, { SelectPos = dt:getmonth() })
 
         local day = date(dt:getyear(), dt:getmonth(), 1)
         if Settings.FirstSunday then
@@ -244,23 +247,25 @@ local function ExecCalendar()
 
         for d = 1, 7 do
             local id = ID.table - 7 + (Settings.FirstSunday and mod(d, 7) + 1 or d)
-            far.SendDlgMessage(hDlg, "DM_SETTEXT", id, Localization().DaysOfWeek[d])
+            SendDlgMessage(hDlg, "DM_SETTEXT", id, Localization().DaysOfWeek[d])
             CF[id] = d > 5 and Colors.Weekend or nil
         end
-
 
         for w = 0, 5 do
             for d = 1, 7 do
                 local dayFormat = " %2s "
                 local currentId = w * 7 + d
                 local id = ID.table + currentId
+                local daySelected = day:getmonth() == dt:getmonth() and day:getday() == dt:getday()
+                local dayIsToday = day:getyear() == today:getyear() and day:getmonth() == today:getmonth() and day:getday() == today:getday()
 
-                if day:getmonth() == dt:getmonth() and day:getday() == dt:getday() then
+                if daySelected then
                     CF[id] = Colors.Selected
-                    dayFormat = "[%2s]"
+                    dayFormat = dayIsToday and "{%2s}" or "[%2s]"
                     tableSelected = currentId
-                elseif day:getyear() == today:getyear() and day:getmonth() == today:getmonth() and day:getday() == today:getday() then
+                elseif dayIsToday then
                     CF[id] = Colors.Today
+                    dayFormat = "-%2s-"
                 elseif day:getmonth() ~= dt:getmonth() then
                     CF[id] = Colors.Disabled
                 elseif ((Settings.FirstSunday and mod(d - 2, 7) + 1 or d)) > 5 then
@@ -269,17 +274,17 @@ local function ExecCalendar()
                     CF[id] = Colors.Normal
                 end
 
-                far.SendDlgMessage(hDlg, "DM_ENABLE", id, day:getmonth() == dt:getmonth() and 1 or 0)
-                far.SendDlgMessage(hDlg, "DM_SETTEXT", id, fmt(dayFormat, day:getday()))
+                SendDlgMessage(hDlg, "DM_ENABLE", id, day:getmonth() == dt:getmonth() and 1 or 0)
+                SendDlgMessage(hDlg, "DM_SETTEXT", id, fmt(dayFormat, day:getday()))
                 day:adddays(1)
             end
         end
-        far.SendDlgMessage(hDlg, "DM_SETTEXT", ID.title, dt:fmt(Settings.Format))
-        far.SendDlgMessage(hDlg, "DM_SETTEXT", ID.textDate, dt:fmt(Settings.Format))
-        far.SendDlgMessage(hDlg, "DM_SETTEXT", ID.textInfo, dt:fmt(Settings.Info))
+        SendDlgMessage(hDlg, "DM_SETTEXT", ID.title, dt:fmt(Settings.Format))
+        SendDlgMessage(hDlg, "DM_SETTEXT", ID.textDate, dt:fmt(Settings.Format))
+        SendDlgMessage(hDlg, "DM_SETTEXT", ID.textInfo, dt:fmt(Settings.Info))
 
         UpdateControlsState(hDlg)
-        far.SendDlgMessage(hDlg, "DM_ENABLEREDRAW", 1)
+        SendDlgMessage(hDlg, "DM_ENABLEREDRAW", 1)
         isRendering = false
     end
 
@@ -311,38 +316,40 @@ local function ExecCalendar()
             return
         elseif Msg == F.DN_INITDIALOG then
             for i = 1, #Formats do
-                far.SendDlgMessage(hDlg, "DM_ADDHISTORY", ID.format, Formats[i], i)
+                SendDlgMessage(hDlg, "DM_ADDHISTORY", ID.format, Formats[i], i)
             end
-            far.SendDlgMessage(hDlg, "DM_ADDHISTORY", ID.format, Settings.Format, 1)
+            SendDlgMessage(hDlg, "DM_ADDHISTORY", ID.format, Settings.Format, 1)
 
             for i = 1, #Info do
-                far.SendDlgMessage(hDlg, "DM_ADDHISTORY", ID.info, Info[i], i)
+                SendDlgMessage(hDlg, "DM_ADDHISTORY", ID.info, Info[i], i)
             end
-            far.SendDlgMessage(hDlg, "DM_ADDHISTORY", ID.info, Settings.Info, 1)
+            SendDlgMessage(hDlg, "DM_ADDHISTORY", ID.info, Settings.Info, 1)
             Redraw(hDlg)
+        elseif Msg == F.DN_HELP then
+            os.execute 'start https://github.com/dimfishr/Far_Macros#format'
         elseif Param1 == ID.insert then
             Text = GetDateText(hDlg)
         elseif Param1 == -1 then
             Text = ""
         elseif Msg == F.DN_EDITCHANGE then
             if Param1 == ID.year then
-                local selY = tonumber(far.SendDlgMessage(hDlg, "DM_GETTEXT", Param1, nil))
+                local selY = tonumber(SendDlgMessage(hDlg, "DM_GETTEXT", Param1, 0))
                 if selY ~= dt:getyear() then
                     dt:setyear(selY)
                     Redraw(hDlg)
                 end
             elseif Param1 == ID.month then
-                local selM = (far.SendDlgMessage(hDlg, "DM_LISTGETCURPOS", Param1, nil)).SelectPos
+                local selM = (SendDlgMessage(hDlg, "DM_LISTGETCURPOS", Param1, 0)).SelectPos
                 if selM ~= dt:getmonth() then
                     setmonthFix(dt, selM)
                     Redraw(hDlg)
                 end
             elseif Param1 == ID.format then
-                Settings.Format = far.SendDlgMessage(hDlg, "DM_GETTEXT", Param1, nil)
+                Settings.Format = SendDlgMessage(hDlg, "DM_GETTEXT", Param1, 0)
                 mf.msave("dimfish", "Calendar", Settings)
                 Redraw(hDlg)
             elseif Param1 == ID.info then
-                Settings.Info = far.SendDlgMessage(hDlg, "DM_GETTEXT", Param1, nil)
+                Settings.Info = SendDlgMessage(hDlg, "DM_GETTEXT", Param1, 0)
                 mf.msave("dimfish", "Calendar", Settings)
                 Redraw(hDlg)
             elseif Param1 == ID.textDate then
@@ -361,11 +368,12 @@ local function ExecCalendar()
                 SetDate(hDlg)
             elseif Param1 == ID.today then
                 dt = date()
+                SendDlgMessage(hDlg, "DM_SETFOCUS", ID.userControl, 0)
             elseif Param1 == ID.copyDate then
                 far.CopyToClipboard(GetDateText(hDlg))
                 Text = "" -- do not print
             elseif Param1 == ID.firstSu or Param1 == ID.firstMo then
-                Settings.FirstSunday = far.SendDlgMessage(hDlg, "DM_GETCHECK", ID.firstSu, nil) == 1 and true or false
+                Settings.FirstSunday = SendDlgMessage(hDlg, "DM_GETCHECK", ID.firstSu, 0) == 1 and true or false
                 mf.msave("dimfish", "Calendar", Settings)
             else
                 return
