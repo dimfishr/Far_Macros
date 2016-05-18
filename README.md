@@ -1,8 +1,6 @@
-#FAR Macros
+#Calendar FAR macro
 
-Calendar FAR macro
-
-![alt text](http://i80.fastpic.ru/big/2016/0517/c8/f7af54c020a7a9037cf2d802d50a3cc8.png "Calendar")
+![alt text](http://i79.fastpic.ru/big/2016/0518/28/e78044ef564896b0b8e4d03b9f6c9e28.png "Calendar")
 
 ##Features:
 
@@ -12,7 +10,7 @@ Calendar FAR macro
 * Hotkeys: Ctrl+Arrows change Month/Year
 * Hotkeys: Ctrl+Ins, Ctrl+C - copy to clipboard
 
-##### Format
+#### Format
 |Spec|Description|
 |------|---|
 |**%a**|Abbreviated weekday name (Sun)
@@ -56,7 +54,7 @@ Calendar FAR macro
 |**${ctime}**|ctime format, same as "%a %b %d %T GMT %Y"
 |**${rfc850}**|RFC850 format, same as "%A, %d-%b-%y %T GMT"
 |**${rfc1123}**|RFC1123 format, same as "%a, %d %b %Y %T GMT"
-|**${asctime}**|asctime format, same as "%a %b %d %T %Y"* Default Colors:
+|**${asctime}**|asctime format, same as "%a %b %d %T %Y"
 
 [Full Specification](https://tieske.github.io/date/)
 
