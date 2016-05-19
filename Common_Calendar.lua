@@ -25,8 +25,10 @@ local Info = {
 local Colors = {
     Normal = 0x0,
     Weekend = 0x4,
-    Today = 0x9,
+    Today = 0x3,
+    TodayBG = nil,
     Selected = 0xE,
+    SelectedBG = 0x3,
     Disabled = 0x8,
 }
 
@@ -158,6 +160,7 @@ local function ExecCalendar()
     local I = {}
     local ID = {}
     local CF = {}
+    local CB = {}
 
     I[#I + 1] = { F.DI_DOUBLEBOX, 3, 1, 32, 19, 0, 0, 0, 0, Localization().Title }
     ID.title = #I
@@ -252,19 +255,21 @@ local function ExecCalendar()
 
         for w = 0, 5 do
             for d = 1, 7 do
-                local dayFormat = " %2s "
                 local currentId = w * 7 + d
                 local id = ID.table + currentId
+
                 local daySelected = day:getmonth() == dt:getmonth() and day:getday() == dt:getday()
                 local dayIsToday = day:getyear() == today:getyear() and day:getmonth() == today:getmonth() and day:getday() == today:getday()
 
+                local dayFormat = daySelected and "[%2s]" or dayIsToday and "[%2s]" or " %2s "
+
+                CB[id] = daySelected and Colors.SelectedBG or dayIsToday and Colors.TodayBG or nil
+
                 if daySelected then
                     CF[id] = Colors.Selected
-                    dayFormat = dayIsToday and "{%2s}" or "[%2s]"
                     tableSelected = currentId
                 elseif dayIsToday then
                     CF[id] = Colors.Today
-                    dayFormat = "-%2s-"
                 elseif day:getmonth() ~= dt:getmonth() then
                     CF[id] = Colors.Disabled
                 elseif ((Settings.FirstSunday and mod(d - 2, 7) + 1 or d)) > 5 then
@@ -291,6 +296,9 @@ local function ExecCalendar()
         local _ = hDlg -- suppress the "unused argument" warning
         if CF[Param1] then
             Color[1].ForegroundColor = CF[Param1]
+        end
+        if CB[Param1] then
+            Color[1].BackgroundColor = CB[Param1]
         end
         if Param1 == ID.month or Param1 == ID.format or Param1 == ID.info or Param1 == ID.textDate then
             Color[3] = Color[1]
