@@ -25,8 +25,8 @@ local Info = {
 local Colors = {
     Normal = 0x0,
     Weekend = 0x4,
-    Today = 0x3,
-    TodayBG = nil,
+    Today = 0x7,
+    TodayBG = 0x8,
     Selected = 0xE,
     SelectedBG = 0x3,
     Disabled = 0x8,
@@ -36,7 +36,7 @@ local Colors = {
 local function Localization()
     if far.lang == "Russian" then
         return {
-            Title = "Календарь";
+            Title = "Календарь"; Help = "F1 Справка";
             DaysOfWeek = { "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс" }; Mon = "Пн"; Sun = "Вс";
             Months = { "&Январь", "&Февраль", "&Март", "&Апрель", "Ма&й", "И&юнь", "Ию&ль", "Ав&густ", "&Сентябрь", "&Октябрь", "&Ноябрь", "&Декабрь" };
             Year = '&Г:'; Month = '&М:'; DateFormat = '&Ф:'; Info = '&И:'; FormattedDate = '&Д:';
@@ -44,7 +44,7 @@ local function Localization()
         }
     else
         return {
-            Title = "Calendar";
+            Title = "Calendar"; Help = "F1 - Help";
             DaysOfWeek = { "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su" }; Mon = "M&o"; Sun = "S&u";
             Months = { "&January", "&February", "&March", "&April", "Ma&y", "Ju&ne", "Ju&ly", "Au&gust", "&September", "&October", "&November", "&December" };
             Year = '&Y:'; Month = '&M:'; DateFormat = '&F:'; Info = '&I:'; FormattedDate = '&D:';
@@ -59,12 +59,15 @@ local leftOrRightAlt = 0x0001 + 0x0002
 
 local F = far.Flags
 local SendDlgMessage = far.SendDlgMessage
+local CopyToClipboard = far.CopyToClipboard
 local fmt = string.format
 local band = bit.band
 local tonumber = tonumber
 local tostring = tostring
 local floor = math.floor
 local sort = table.sort
+local mload = mf.mload
+local msave = mf.msave
 
 local date = require("date")
 
@@ -89,7 +92,7 @@ local function ParseDateFormat(format, text)
     format = format:gsub("%%[yYmd]", "(%%d+)"):gsub("%%[hbB]", "(%%a+)")
     format = format:gsub("%-", "%%-"):gsub("%.", "%%."):gsub("%/", "%%/")
 
-    _, _, arr[1].val, arr[2].val, arr[3].val = string.find(text:lower(), format)
+    _, _, arr[1].val, arr[2].val, arr[3].val = text:lower():find(format)
 
     sort(arr, function(a, b) return (a.sort < b.sort) end)
     yy = arr[1].val
@@ -148,7 +151,7 @@ local function setmonthFix(dateObj, m)
 end
 
 local function ExecCalendar()
-    local Settings = mf.mload("dimfish", "Calendar") or { Format = Formats[1], Info = Info[1] }
+    local Settings = mload("dimfish", "Calendar") or { Format = Formats[1], Info = Info[1] }
     local Text
     local today = date()
     local dt = date()
@@ -204,6 +207,8 @@ local function ExecCalendar()
     I[#I + 1] = { F.DI_TEXT, 18, 13, 0, 13, 0, 0, 0, 0, Localization().Info }
     I[#I + 1] = { F.DI_EDIT, 20, 13, 29, 13, 0, "Info", 0, F.DIF_HISTORY, Settings.Info }
     ID.info = #I
+    I[#I + 1] = { F.DI_BUTTON, 7, 14, 0, 14, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, Localization().Help }
+    ID.help = #I
     I[#I + 1] = { F.DI_TEXT, 5, 15, 0, 15, 0, 0, 0, 0, Localization().FormattedDate }
     I[#I + 1] = { F.DI_EDIT, 7, 15, 18, 15, 0, 0, 0, F.DIF_SELECTONENTRY, "" }
     ID.textDate = #I
@@ -225,6 +230,7 @@ local function ExecCalendar()
     CF[ID.monthDec] = Colors.Disabled
     CF[ID.textDate] = Colors.Selected
     CF[ID.firstSu] = Colors.Weekend
+    CF[ID.help] = Colors.Disabled
 
     local function GetDateText(hDlg)
         return SendDlgMessage(hDlg, "DM_GETTEXT", ID.textDate, 0)
@@ -261,19 +267,19 @@ local function ExecCalendar()
                 local daySelected = day:getmonth() == dt:getmonth() and day:getday() == dt:getday()
                 local dayIsToday = day:getyear() == today:getyear() and day:getmonth() == today:getmonth() and day:getday() == today:getday()
 
-                local dayFormat = daySelected and "[%2s]" or dayIsToday and "[%2s]" or " %2s "
+                local dayFormat = daySelected and "[%2s]" or " %2s "
 
                 CB[id] = daySelected and Colors.SelectedBG or dayIsToday and Colors.TodayBG or nil
 
                 if daySelected then
                     CF[id] = Colors.Selected
                     tableSelected = currentId
-                elseif dayIsToday then
-                    CF[id] = Colors.Today
                 elseif day:getmonth() ~= dt:getmonth() then
                     CF[id] = Colors.Disabled
                 elseif ((Settings.FirstSunday and mod(d - 2, 7) + 1 or d)) > 5 then
                     CF[id] = Colors.Weekend
+                elseif dayIsToday then
+                    CF[id] = Colors.Today
                 else
                     CF[id] = Colors.Normal
                 end
@@ -332,7 +338,7 @@ local function ExecCalendar()
             end
             SendDlgMessage(hDlg, "DM_ADDHISTORY", ID.info, Settings.Info, 1)
             Redraw(hDlg)
-        elseif Msg == F.DN_HELP then
+        elseif Msg == F.DN_HELP or (Msg == F.DN_BTNCLICK and Param1 == ID.help) then
             os.execute 'start https://github.com/dimfishr/Far_Macros#format'
         elseif Param1 == ID.insert then
             Text = GetDateText(hDlg)
@@ -353,11 +359,11 @@ local function ExecCalendar()
                 end
             elseif Param1 == ID.format then
                 Settings.Format = SendDlgMessage(hDlg, "DM_GETTEXT", Param1, 0)
-                mf.msave("dimfish", "Calendar", Settings)
+                msave("dimfish", "Calendar", Settings)
                 Redraw(hDlg)
             elseif Param1 == ID.info then
                 Settings.Info = SendDlgMessage(hDlg, "DM_GETTEXT", Param1, 0)
-                mf.msave("dimfish", "Calendar", Settings)
+                msave("dimfish", "Calendar", Settings)
                 Redraw(hDlg)
             elseif Param1 == ID.textDate then
                 UpdateControlsState(hDlg)
@@ -378,11 +384,11 @@ local function ExecCalendar()
                 dt = date()
                 SendDlgMessage(hDlg, "DM_SETFOCUS", ID.userControl, 0)
             elseif Param1 == ID.copyDate then
-                far.CopyToClipboard(GetDateText(hDlg))
+                CopyToClipboard(GetDateText(hDlg))
                 Text = "" -- do not print
             elseif Param1 == ID.firstSu or Param1 == ID.firstMo then
                 Settings.FirstSunday = SendDlgMessage(hDlg, "DM_GETCHECK", ID.firstSu, 0) == 1 and true or false
-                mf.msave("dimfish", "Calendar", Settings)
+                msave("dimfish", "Calendar", Settings)
             else
                 return
             end
@@ -400,7 +406,7 @@ local function ExecCalendar()
                 elseif Param2.VirtualKeyCode == VK.Down then
                     addmonthsFix(dt, 1)
                 elseif Param1 ~= ID.textDate and Param2.VirtualKeyCode == VK.Ins or Param2.VirtualKeyCode == VK.C then
-                    far.CopyToClipboard(GetDateText(hDlg))
+                    CopyToClipboard(GetDateText(hDlg))
                     return
                 else
                     return
@@ -416,7 +422,7 @@ local function ExecCalendar()
                 elseif Param2.VirtualKeyCode == VK.Down then
                     dt:adddays(7)
                 elseif Param2.ButtonState == 1 then
-                    dt:adddays(math.floor(Param2.MousePositionX / 4) + Param2.MousePositionY * 7 + 1 - tableSelected)
+                    dt:adddays(floor(Param2.MousePositionX / 4) + Param2.MousePositionY * 7 + 1 - tableSelected)
                 else
                     return
                 end
