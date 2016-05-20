@@ -32,6 +32,10 @@ local Colors = {
     Disabled = 0x8,
 }
 
+local TodayDefault = 0x87
+local SelectedDefault = 0x3E
+
+
 -- See http://www.omniglot.com/language/time/days.htm, http://www.omniglot.com/language/time/months.htm
 local function Localization()
     if far.lang == "Russian" then
@@ -60,8 +64,10 @@ local leftOrRightAlt = 0x0001 + 0x0002
 local F = far.Flags
 local SendDlgMessage = far.SendDlgMessage
 local CopyToClipboard = far.CopyToClipboard
+local ColorDialog = far.ColorDialog
 local fmt = string.format
 local band = bit.band
+local bshr = bit.rshift
 local tonumber = tonumber
 local tostring = tostring
 local floor = math.floor
@@ -69,9 +75,15 @@ local sort = table.sort
 local mload = mf.mload
 local msave = mf.msave
 
+
 local date = require("date")
 
 local function mod(n, d) return n - d * floor(n / d) end
+
+local function getFG(color) return band(color, 0x0F) end
+
+local function getBG(color) return bshr(band(color, 0xF0), 4) end
+
 
 local function ParseDateFormat(format, text)
     local months = { jan = 1, feb = 2, mar = 3, apr = 4, may = 5, jun = 6, jul = 7, aug = 8, sep = 9, oct = 10, nov = 11, dec = 12 }
@@ -150,20 +162,24 @@ local function setmonthFix(dateObj, m)
     end
 end
 
-local function ExecCalendar()
-    local Settings = mload("dimfish", "Calendar") or { Format = Formats[1], Info = Info[1] }
-    local Text
-    local today = date()
-    local dt = date()
-    local tableSelected
-    local isRendering = false
 
-    local ComboMonths = {} for i = 1, 12 do ComboMonths[i] = { Text = Localization().Months[i] } end
+
+local function ExecCalendar()
+    local dt = date()
+    local today = date()
+    local isRendering = false
+    local tableSelected
+    local Text
 
     local I = {}
     local ID = {}
     local CF = {}
     local CB = {}
+    local ComboMonths = {} for i = 1, 12 do ComboMonths[i] = { Text = Localization().Months[i] } end
+
+    local Settings = mload("dimfish", "Calendar") or { Format = Formats[1], Info = Info[1], Today = TodayDefault, Selected = SelectedDefault }
+    Settings.Today = Settings.Today or TodayDefault
+    Settings.Selected = Settings.Selected or SelectedDefault
 
     I[#I + 1] = { F.DI_DOUBLEBOX, 3, 1, 32, 19, 0, 0, 0, 0, Localization().Title }
     ID.title = #I
@@ -269,17 +285,17 @@ local function ExecCalendar()
 
                 local dayFormat = daySelected and "[%2s]" or " %2s "
 
-                CB[id] = daySelected and Colors.SelectedBG or dayIsToday and Colors.TodayBG or nil
+                CB[id] = daySelected and getBG(Settings.Selected) or dayIsToday and getBG(Settings.Today) or nil
 
                 if daySelected then
-                    CF[id] = Colors.Selected
+                    CF[id] = getFG(Settings.Selected)
                     tableSelected = currentId
                 elseif day:getmonth() ~= dt:getmonth() then
                     CF[id] = Colors.Disabled
                 elseif ((Settings.FirstSunday and mod(d - 2, 7) + 1 or d)) > 5 then
                     CF[id] = Colors.Weekend
                 elseif dayIsToday then
-                    CF[id] = Colors.Today
+                    CF[id] = getFG(Settings.Today)
                 else
                     CF[id] = Colors.Normal
                 end
@@ -320,6 +336,10 @@ local function ExecCalendar()
             return true
         end
         return false
+    end
+
+    local function getDelta(Mouse)
+        return floor(Mouse.MousePositionX / 4) + Mouse.MousePositionY * 7 + 1 - tableSelected
     end
 
     local function DlgProc(hDlg, Msg, Param1, Param2)
@@ -408,6 +428,23 @@ local function ExecCalendar()
                 elseif Param1 ~= ID.textDate and Param2.VirtualKeyCode == VK.Ins or Param2.VirtualKeyCode == VK.C then
                     CopyToClipboard(GetDateText(hDlg))
                     return
+                elseif Param2.ButtonState == 1 then
+                    local delta = getDelta(Param2)
+                    if delta == 0 then
+                        local color = ColorDialog(Settings.Selected, F.FCF_FG_4BIT + F.FCF_BG_4BIT)
+                        if color then
+                            Settings.Selected = color
+                            msave("dimfish", "Calendar", Settings)
+                        end
+                    elseif delta == date.diff(today, dt):spandays() then
+                        local color = ColorDialog(Settings.Today, F.FCF_FG_4BIT + F.FCF_BG_4BIT)
+                        if color then
+                            Settings.Today = color
+                            msave("dimfish", "Calendar", Settings)
+                        end
+                    else
+                        return
+                    end
                 else
                     return
                 end
@@ -422,7 +459,7 @@ local function ExecCalendar()
                 elseif Param2.VirtualKeyCode == VK.Down then
                     dt:adddays(7)
                 elseif Param2.ButtonState == 1 then
-                    dt:adddays(floor(Param2.MousePositionX / 4) + Param2.MousePositionY * 7 + 1 - tableSelected)
+                    dt:adddays(getDelta(Param2))
                 else
                     return
                 end
