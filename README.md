@@ -1,14 +1,15 @@
 #Calendar FAR macro
 
-![alt text](http://i79.fastpic.ru/big/2016/0518/28/e78044ef564896b0b8e4d03b9f6c9e28.png "Calendar")
+![alt text](http://i77.fastpic.ru/big/2016/0520/c6/7818cf045475deff04339ac45c1a95c6.png "Calendar")
 
 ##Features:
 
 * Print or copy custom date format
 * First day option
 * Parse date by selected format or any format
-* Hotkeys: Ctrl+Arrows change Month/Year
+* Hotkeys: Ctrl+Arrows - change Month/Year
 * Hotkeys: Ctrl+Ins, Ctrl+C - copy to clipboard
+* Hotkeys: Ctrl+MouseClick, - change Color of Selected or Today 
 
 #### Format
 |Spec|Description|
