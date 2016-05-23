@@ -1,6 +1,6 @@
 #Calendar FAR macro
 
-![alt text](http://i77.fastpic.ru/big/2016/0520/c6/7818cf045475deff04339ac45c1a95c6.png "Calendar")
+![alt text](http://i77.fastpic.ru/big/2016/0523/87/1b1ae0da482974992fef47853dcfe387.png "Calendar")
 
 ##Features:
 
@@ -8,8 +8,9 @@
 * First day option
 * Parse date by selected format or any format
 * Hotkeys: Ctrl+Arrows - change Month/Year
-* Hotkeys: Ctrl+Ins, Ctrl+C - copy to clipboard
-* Hotkeys: Ctrl+MouseClick, - change Color of Selected or Today 
+* Hotkeys: Ctrl+Ins, Ctrl+C - copy to Clipboard
+* Hotkeys: Ctrl+MouseClick - change Color of Selected or Today or both 
+* Hotkeys: Ctrl+Alt+MouseClick - change Format of Selected or Today or both 
 
 #### Format
 |Spec|Description|
@@ -62,7 +63,6 @@
 ##### Default Colors
 * Normal - 0x0 (black)
 * Weekend - 0x4 (maroon)
-* Today - 0x9 (blue)
 * Selected - 0xE (yellow)
 * Disabled - 0x8 (gray)
 

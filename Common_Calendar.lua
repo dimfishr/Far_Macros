@@ -22,19 +22,21 @@ local Info = {
     "[%W] [%j]",
 }
 
+local DayFormats = {
+    " %2s ",
+    "[%2s]",
+    "{%2s}",
+    "<%2s>",
+    "-%2s-",
+}
+
+
 local Colors = {
     Normal = 0x0,
     Weekend = 0x4,
-    Today = 0x7,
-    TodayBG = 0x8,
     Selected = 0xE,
-    SelectedBG = 0x3,
     Disabled = 0x8,
 }
-
-local TodayDefault = 0x87
-local SelectedDefault = 0x3E
-
 
 -- See http://www.omniglot.com/language/time/days.htm, http://www.omniglot.com/language/time/months.htm
 local function Localization()
@@ -43,7 +45,7 @@ local function Localization()
             Title = "Календарь"; Help = "F1 Справка";
             DaysOfWeek = { "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс" }; Mon = "Пн"; Sun = "Вс";
             Months = { "&Январь", "&Февраль", "&Март", "&Апрель", "Ма&й", "И&юнь", "Ию&ль", "Ав&густ", "&Сентябрь", "&Октябрь", "&Ноябрь", "&Декабрь" };
-            Year = '&Г:'; Month = '&М:'; DateFormat = '&Ф:'; Info = '&И:'; FormattedDate = '&Д:';
+            Year = '&Г:'; Month = '&М:'; Format = "Формат"; DateFormat = '&Ф:'; Info = '&И:'; FormattedDate = '&Д:';
             Today = "&Сегодня"; Select = '&Выберите:'; Refresh = "&Обновить"; Insert = "Вставить"; Copy = "&Копировать";
         }
     else
@@ -51,7 +53,7 @@ local function Localization()
             Title = "Calendar"; Help = "F1 - Help";
             DaysOfWeek = { "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su" }; Mon = "M&o"; Sun = "S&u";
             Months = { "&January", "&February", "&March", "&April", "Ma&y", "Ju&ne", "Ju&ly", "Au&gust", "&September", "&October", "&November", "&December" };
-            Year = '&Y:'; Month = '&M:'; DateFormat = '&F:'; Info = '&I:'; FormattedDate = '&D:';
+            Year = '&Y:'; Month = '&M:'; Format = "Format", DateFormat = '&F:'; Info = '&I:'; FormattedDate = '&D:';
             Today = "&Today"; Select = '&Select:'; Refresh = "&Refresh"; Insert = "Insert"; Copy = "&Copy";
         }
     end
@@ -65,24 +67,32 @@ local F = far.Flags
 local SendDlgMessage = far.SendDlgMessage
 local CopyToClipboard = far.CopyToClipboard
 local ColorDialog = far.ColorDialog
+local Dialog = far.Dialog
+local Menu = far.Menu
 local fmt = string.format
 local band = bit.band
 local bshr = bit.rshift
 local tonumber = tonumber
 local tostring = tostring
+local pcall = pcall
+local print = print
 local floor = math.floor
 local sort = table.sort
-local mload = mf.mload
-local msave = mf.msave
-
+local mfload = mf.mload
+local mfsave = mf.msave
+local Uuid = win.Uuid
 
 local date = require("date")
 
 local function mod(n, d) return n - d * floor(n / d) end
 
-local function getFG(color) return band(color, 0x0F) end
+local function getFG(c) return band(c, 0x0F) end
 
-local function getBG(color) return bshr(band(color, 0xF0), 4) end
+local function getBG(c) return bshr(band(c, 0xF0), 4) end
+
+local function mload() return mfload("dimfish", "Calendar") end
+
+local function msave(s) mfsave("dimfish", "Calendar", s) end
 
 
 local function ParseDateFormat(format, text)
@@ -177,9 +187,14 @@ local function ExecCalendar()
     local CB = {}
     local ComboMonths = {} for i = 1, 12 do ComboMonths[i] = { Text = Localization().Months[i] } end
 
-    local Settings = mload("dimfish", "Calendar") or { Format = Formats[1], Info = Info[1], Today = TodayDefault, Selected = SelectedDefault }
-    Settings.Today = Settings.Today or TodayDefault
-    Settings.Selected = Settings.Selected or SelectedDefault
+    local Settings = mload() or { Format = Formats[1], Info = Info[1] }
+
+    Settings.Today = Settings.Today or 0x87
+    Settings.Selected = Settings.Selected or 0x3E
+    Settings.SelectedToday = Settings.SelectedToday or 0x3E
+    Settings.FormatToday = Settings.FormatToday or DayFormats[1]
+    Settings.FormatSelected = Settings.FormatSelected or DayFormats[1]
+    Settings.FormatSelectedToday = Settings.FormatSelectedToday or DayFormats[1]
 
     I[#I + 1] = { F.DI_DOUBLEBOX, 3, 1, 32, 19, 0, 0, 0, 0, Localization().Title }
     ID.title = #I
@@ -280,22 +295,35 @@ local function ExecCalendar()
                 local currentId = w * 7 + d
                 local id = ID.table + currentId
 
+                local dayFormat = DayFormats[1]
+                CB[id] = nil
+
                 local daySelected = day:getmonth() == dt:getmonth() and day:getday() == dt:getday()
                 local dayIsToday = day:getyear() == today:getyear() and day:getmonth() == today:getmonth() and day:getday() == today:getday()
+                local dayIsWeekend = ((Settings.FirstSunday and mod(d - 2, 7) + 1 or d)) > 5
 
-                local dayFormat = daySelected and "[%2s]" or " %2s "
+                tableSelected = daySelected and currentId or tableSelected
 
-                CB[id] = daySelected and getBG(Settings.Selected) or dayIsToday and getBG(Settings.Today) or nil
-
-                if daySelected then
+                if daySelected and dayIsToday then
+                    CB[id] = getBG(Settings.SelectedToday)
+                    CF[id] = getFG(Settings.SelectedToday)
+                    dayFormat = Settings.FormatSelectedToday
+                elseif daySelected then
+                    CB[id] = getBG(Settings.Selected)
                     CF[id] = getFG(Settings.Selected)
-                    tableSelected = currentId
+                    dayFormat = Settings.FormatSelected
+                elseif dayIsToday and dayIsWeekend then
+                    CB[id] = getBG(Settings.Today)
+                    CF[id] = Colors.Weekend
+                    dayFormat = Settings.FormatToday
+                elseif dayIsToday then
+                    CB[id] = getBG(Settings.Today)
+                    CF[id] = getFG(Settings.Today)
+                    dayFormat = Settings.FormatToday
                 elseif day:getmonth() ~= dt:getmonth() then
                     CF[id] = Colors.Disabled
-                elseif ((Settings.FirstSunday and mod(d - 2, 7) + 1 or d)) > 5 then
+                elseif dayIsWeekend then
                     CF[id] = Colors.Weekend
-                elseif dayIsToday then
-                    CF[id] = getFG(Settings.Today)
                 else
                     CF[id] = Colors.Normal
                 end
@@ -342,6 +370,33 @@ local function ExecCalendar()
         return floor(Mouse.MousePositionX / 4) + Mouse.MousePositionY * 7 + 1 - tableSelected
     end
 
+    local function ColorSettings(name)
+        local color = ColorDialog(Settings[name], F.FCF_FG_4BIT + F.FCF_BG_4BIT)
+        if color then
+            Settings[name] = color
+            msave(Settings)
+        end
+    end
+
+    local function MenuSettings(name)
+        local props = {
+            Title = Localization().Format,
+        }
+        local items = {}
+        for i = 1, #DayFormats do
+            items[i] = {
+                text = DayFormats[i],
+                selected = Settings[name] == DayFormats[i]
+            }
+        end
+
+        local result = Menu(props, items, nil)
+        if result then
+            Settings[name] = result.text
+            msave(Settings)
+        end
+    end
+
     local function DlgProc(hDlg, Msg, Param1, Param2)
         if Msg == F.DN_CTLCOLORDLGITEM then
             return GetItemColor(hDlg, Param1, Param2)
@@ -379,11 +434,11 @@ local function ExecCalendar()
                 end
             elseif Param1 == ID.format then
                 Settings.Format = SendDlgMessage(hDlg, "DM_GETTEXT", Param1, 0)
-                msave("dimfish", "Calendar", Settings)
+                msave(Settings)
                 Redraw(hDlg)
             elseif Param1 == ID.info then
                 Settings.Info = SendDlgMessage(hDlg, "DM_GETTEXT", Param1, 0)
-                msave("dimfish", "Calendar", Settings)
+                msave(Settings)
                 Redraw(hDlg)
             elseif Param1 == ID.textDate then
                 UpdateControlsState(hDlg)
@@ -408,7 +463,7 @@ local function ExecCalendar()
                 Text = "" -- do not print
             elseif Param1 == ID.firstSu or Param1 == ID.firstMo then
                 Settings.FirstSunday = SendDlgMessage(hDlg, "DM_GETCHECK", ID.firstSu, 0) == 1 and true or false
-                msave("dimfish", "Calendar", Settings)
+                msave(Settings)
             else
                 return
             end
@@ -428,23 +483,33 @@ local function ExecCalendar()
                 elseif Param1 ~= ID.textDate and Param2.VirtualKeyCode == VK.Ins or Param2.VirtualKeyCode == VK.C then
                     CopyToClipboard(GetDateText(hDlg))
                     return
-                elseif Param2.ButtonState == 1 then
+                elseif Param1 == ID.userControl and Param2.ButtonState == 1 then
                     local delta = getDelta(Param2)
-                    if delta == 0 then
-                        local color = ColorDialog(Settings.Selected, F.FCF_FG_4BIT + F.FCF_BG_4BIT)
-                        if color then
-                            Settings.Selected = color
-                            msave("dimfish", "Calendar", Settings)
-                        end
-                    elseif delta == date.diff(today, dt):spandays() then
-                        local color = ColorDialog(Settings.Today, F.FCF_FG_4BIT + F.FCF_BG_4BIT)
-                        if color then
-                            Settings.Today = color
-                            msave("dimfish", "Calendar", Settings)
-                        end
+                    local isToday = dt:getyear() == today:getyear() and dt:getmonth() == today:getmonth() and dt:getday() + delta == today:getday()
+                    if delta == 0 and isToday then
+                        ColorSettings("SelectedToday")
+                    elseif delta == 0 then
+                        ColorSettings("Selected")
+                    elseif isToday then
+                        ColorSettings("Today")
                     else
                         return
                     end
+                else
+                    return
+                end
+                Redraw(hDlg)
+            elseif Param1 == ID.userControl and Param2.ControlKeyState and Param2.ButtonState == 1 and
+                    band(Param2.ControlKeyState, leftOrRightCtrl) ~= 0 and
+                    band(Param2.ControlKeyState, leftOrRightAlt) ~= 0 then
+                local delta = getDelta(Param2)
+                local isToday = dt:getyear() == today:getyear() and dt:getmonth() == today:getmonth() and dt:getday() + delta == today:getday()
+                if delta == 0 and isToday then
+                    MenuSettings("FormatSelectedToday")
+                elseif delta == 0 then
+                    MenuSettings("FormatSelected")
+                elseif isToday then
+                    MenuSettings("FormatToday")
                 else
                     return
                 end
@@ -473,8 +538,8 @@ local function ExecCalendar()
         end
     end
 
-    local guid = win.Uuid("06a13b89-3fec-46a2-be11-a50b68ceaa56")
-    far.Dialog(guid, -1, -1, 36, 21, nil, I, nil, DlgProc)
+    local guid = Uuid("06a13b89-3fec-46a2-be11-a50b68ceaa56")
+    Dialog(guid, -1, -1, 36, 21, nil, I, nil, DlgProc)
     if Text then print(Text) end
 end
 
