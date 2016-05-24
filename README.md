@@ -1,6 +1,6 @@
 #Calendar FAR macro
 
-![alt text](http://i77.fastpic.ru/big/2016/0523/87/1b1ae0da482974992fef47853dcfe387.png "Calendar")
+![alt text](http://i80.fastpic.ru/big/2016/0524/89/881d7046fddb28f7508ef2fc97d47a89.png "Calendar")
 
 ##Features:
 
@@ -9,8 +9,8 @@
 * Parse date by selected format or any format
 * Hotkeys: Ctrl+Arrows - change Month/Year
 * Hotkeys: Ctrl+Ins, Ctrl+C - copy to Clipboard
-* Hotkeys: Ctrl+MouseClick - change Color of Selected or Today or both 
-* Hotkeys: Ctrl+Alt+MouseClick - change Format of Selected or Today or both 
+* Hotkeys: Ctrl+\[F1,F2,F3,MouseClick\] - change Color of Selected Today or Selected or Today 
+* Hotkeys: Ctrl+Alt+\[F1,F2,F3,MouseClick\] - change Format of Selected Today or Selected or Today 
 
 #### Format
 |Spec|Description|

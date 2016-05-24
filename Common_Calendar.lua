@@ -27,6 +27,7 @@ local DayFormats = {
     "[%2s]",
     "{%2s}",
     "<%2s>",
+    "‹%2s›",
     "-%2s-",
 }
 
@@ -53,13 +54,13 @@ local function Localization()
             Title = "Calendar"; Help = "F1 - Help";
             DaysOfWeek = { "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su" }; Mon = "M&o"; Sun = "S&u";
             Months = { "&January", "&February", "&March", "&April", "Ma&y", "Ju&ne", "Ju&ly", "Au&gust", "&September", "&October", "&November", "&December" };
-            Year = '&Y:'; Month = '&M:'; Format = "Format", DateFormat = '&F:'; Info = '&I:'; FormattedDate = '&D:';
+            Year = '&Y:'; Month = '&M:'; Format = "Format"; DateFormat = '&F:'; Info = '&I:'; FormattedDate = '&D:';
             Today = "&Today"; Select = '&Select:'; Refresh = "&Refresh"; Insert = "Insert"; Copy = "&Copy";
         }
     end
 end
 
-local VK = { Enter = 13; Left = 37; Up = 38; Right = 39; Down = 40; Ins = 45, C = 67 }
+local VK = { Enter = 13; Left = 37; Up = 38; Right = 39; Down = 40; Ins = 45, C = 67, F1 = 112, F2 = 113, F3 = 114 }
 local leftOrRightCtrl = 0x0008 + 0x0004
 local leftOrRightAlt = 0x0001 + 0x0002
 
@@ -232,6 +233,8 @@ local function ExecCalendar()
 
     I[#I + 1] = { F.DI_USERCONTROL, 4, row + 1, 31, row + 6, 0, 0, 0, F.DIF_FOCUS }
     ID.userControl = #I
+    I[#I + 1] = { F.DI_TEXT, 6, 12, 28, 12, 0, 0, 0, 0, "Ctrl(Alt)[F1,F2,F3,Mouse]" }
+    ID.hotKeys = #I
     I[#I + 1] = { F.DI_TEXT, 5, 13, 0, 13, 0, 0, 0, 0, Localization().DateFormat }
     I[#I + 1] = { F.DI_EDIT, 7, 13, 15, 13, 0, "Format", 0, F.DIF_HISTORY, Settings.Format }
     ID.format = #I
@@ -262,6 +265,7 @@ local function ExecCalendar()
     CF[ID.textDate] = Colors.Selected
     CF[ID.firstSu] = Colors.Weekend
     CF[ID.help] = Colors.Disabled
+    CF[ID.hotKeys] = Colors.Disabled
 
     local function GetDateText(hDlg)
         return SendDlgMessage(hDlg, "DM_GETTEXT", ID.textDate, 0)
@@ -312,10 +316,6 @@ local function ExecCalendar()
                     CB[id] = getBG(Settings.Selected)
                     CF[id] = getFG(Settings.Selected)
                     dayFormat = Settings.FormatSelected
-                elseif dayIsToday and dayIsWeekend then
-                    CB[id] = getBG(Settings.Today)
-                    CF[id] = Colors.Weekend
-                    dayFormat = Settings.FormatToday
                 elseif dayIsToday then
                     CB[id] = getBG(Settings.Today)
                     CF[id] = getFG(Settings.Today)
@@ -483,15 +483,25 @@ local function ExecCalendar()
                 elseif Param1 ~= ID.textDate and Param2.VirtualKeyCode == VK.Ins or Param2.VirtualKeyCode == VK.C then
                     CopyToClipboard(GetDateText(hDlg))
                     return
-                elseif Param1 == ID.userControl and Param2.ButtonState == 1 then
-                    local delta = getDelta(Param2)
-                    local isToday = dt:getyear() == today:getyear() and dt:getmonth() == today:getmonth() and dt:getday() + delta == today:getday()
-                    if delta == 0 and isToday then
+                elseif Param1 == ID.userControl then
+                    if Param2.VirtualKeyCode == VK.F1 then
                         ColorSettings("SelectedToday")
-                    elseif delta == 0 then
+                    elseif Param2.VirtualKeyCode == VK.F2 then
                         ColorSettings("Selected")
-                    elseif isToday then
+                    elseif Param2.VirtualKeyCode == VK.F3 then
                         ColorSettings("Today")
+                    elseif Param2.ButtonState == 1 then
+                        local delta = getDelta(Param2)
+                        local isToday = dt:getyear() == today:getyear() and dt:getmonth() == today:getmonth() and dt:getday() + delta == today:getday()
+                        if delta == 0 and isToday then
+                            ColorSettings("SelectedToday")
+                        elseif delta == 0 then
+                            ColorSettings("Selected")
+                        elseif isToday then
+                            ColorSettings("Today")
+                        else
+                            return
+                        end
                     else
                         return
                     end
@@ -499,17 +509,27 @@ local function ExecCalendar()
                     return
                 end
                 Redraw(hDlg)
-            elseif Param1 == ID.userControl and Param2.ControlKeyState and Param2.ButtonState == 1 and
+            elseif Param1 == ID.userControl and Param2.ControlKeyState and
                     band(Param2.ControlKeyState, leftOrRightCtrl) ~= 0 and
                     band(Param2.ControlKeyState, leftOrRightAlt) ~= 0 then
-                local delta = getDelta(Param2)
-                local isToday = dt:getyear() == today:getyear() and dt:getmonth() == today:getmonth() and dt:getday() + delta == today:getday()
-                if delta == 0 and isToday then
+                if Param2.VirtualKeyCode == VK.F1 then
                     MenuSettings("FormatSelectedToday")
-                elseif delta == 0 then
+                elseif Param2.VirtualKeyCode == VK.F2 then
                     MenuSettings("FormatSelected")
-                elseif isToday then
+                elseif Param2.VirtualKeyCode == VK.F3 then
                     MenuSettings("FormatToday")
+                elseif Param2.ButtonState == 1 then
+                    local delta = getDelta(Param2)
+                    local isToday = dt:getyear() == today:getyear() and dt:getmonth() == today:getmonth() and dt:getday() + delta == today:getday()
+                    if delta == 0 and isToday then
+                        MenuSettings("FormatSelectedToday")
+                    elseif delta == 0 then
+                        MenuSettings("FormatSelected")
+                    elseif isToday then
+                        MenuSettings("FormatToday")
+                    else
+                        return
+                    end
                 else
                     return
                 end
