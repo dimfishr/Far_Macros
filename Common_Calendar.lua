@@ -31,7 +31,6 @@ local DayFormats = {
     "-%2s-",
 }
 
-
 local Colors = {
     Normal = 0x0,
     Weekend = 0x4,
@@ -39,26 +38,6 @@ local Colors = {
     Disabled = 0x8,
 }
 
--- See http://www.omniglot.com/language/time/days.htm, http://www.omniglot.com/language/time/months.htm
-local function Localization()
-    if far.lang == "Russian" then
-        return {
-            Title = "Календарь"; Help = "F1 Справка";
-            DaysOfWeek = { "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс" }; Mon = "Пн"; Sun = "Вс";
-            Months = { "&Январь", "&Февраль", "&Март", "&Апрель", "Ма&й", "И&юнь", "Ию&ль", "Ав&густ", "&Сентябрь", "&Октябрь", "&Ноябрь", "&Декабрь" };
-            Year = '&Г:'; Month = '&М:'; Format = "Формат"; DateFormat = '&Ф:'; Info = '&И:'; FormattedDate = '&Д:';
-            Today = "&Сегодня"; Select = '&Выберите:'; Refresh = "&Обновить"; Insert = "Вставить"; Copy = "&Копировать";
-        }
-    else
-        return {
-            Title = "Calendar"; Help = "F1 - Help";
-            DaysOfWeek = { "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su" }; Mon = "M&o"; Sun = "S&u";
-            Months = { "&January", "&February", "&March", "&April", "Ma&y", "Ju&ne", "Ju&ly", "Au&gust", "&September", "&October", "&November", "&December" };
-            Year = '&Y:'; Month = '&M:'; Format = "Format"; DateFormat = '&F:'; Info = '&I:'; FormattedDate = '&D:';
-            Today = "&Today"; Select = '&Select:'; Refresh = "&Refresh"; Insert = "Insert"; Copy = "&Copy";
-        }
-    end
-end
 
 local VK = { Enter = 13; Left = 37; Up = 38; Right = 39; Down = 40; Ins = 45, C = 67, F1 = 112, F2 = 113, F3 = 114 }
 local LeftOrRightCtrl = 0x0008 + 0x0004
@@ -70,6 +49,7 @@ local F = far.Flags
 local SendDlgMessage = far.SendDlgMessage
 local CopyToClipboard = far.CopyToClipboard
 local ColorDialog = far.ColorDialog
+local ShowHelp = far.ShowHelp
 local Dialog = far.Dialog
 local Menu = far.Menu
 local fmt = string.format
@@ -79,13 +59,20 @@ local tonumber = tonumber
 local tostring = tostring
 local pcall = pcall
 local print = print
+local dofile = dofile
 local floor = math.floor
 local sort = table.sort
 local mfload = mf.mload
 local mfsave = mf.msave
 local Uuid = win.Uuid
+local GetEnv = win.GetEnv
+local GetFileAttr = win.GetFileAttr
 
 local date = require("date")
+
+local FL = GetEnv("FARLANG"):sub(1, 3)
+local Path = (...):match("(.*)%.lua") .. "_"
+local L = dofile(Path .. (GetFileAttr(Path .. FL .. ".lng") and FL or "Eng") .. ".lng")
 
 local function mod(n, d) return n - d * floor(n / d) end
 
@@ -97,6 +84,9 @@ local function mload() return mfload("dimfish", "Calendar") end
 
 local function msave(s) mfsave("dimfish", "Calendar", s) end
 
+local function Help(a)
+    ShowHelp(Path .. (GetFileAttr(Path .. FL .. ".hlf") and FL or "Eng") .. ".hlf", a, F.FHELP_CUSTOMFILE)
+end
 
 local function ParseDateFormat(format, text)
     local months = { jan = 1, feb = 2, mar = 3, apr = 4, may = 5, jun = 6, jul = 7, aug = 8, sep = 9, oct = 10, nov = 11, dec = 12 }
@@ -188,7 +178,7 @@ local function ExecCalendar()
     local ID = {}
     local CF = {}
     local CB = {}
-    local ComboMonths = {} for i = 1, 12 do ComboMonths[i] = { Text = Localization().Months[i] } end
+    local ComboMonths = {} for i = 1, 12 do ComboMonths[i] = { Text = L.Months[i] } end
 
     local Settings = mload() or { Format = Formats[1], Info = Info[1] }
 
@@ -202,29 +192,29 @@ local function ExecCalendar()
     Settings.FormatSelected = Settings.FormatSelected or DayFormats[1]
     Settings.FormatSelectedToday = Settings.FormatSelectedToday or DayFormats[1]
 
-    I[#I + 1] = { F.DI_DOUBLEBOX, 3, 1, 32, 19, 0, 0, 0, 0, Localization().Title }
+    I[#I + 1] = { F.DI_DOUBLEBOX, 3, 1, 32, 19, 0, 0, 0, 0, L.Title }
     ID.title = #I
     I[#I + 1] = { F.DI_BUTTON, 7, 2, 0, 2, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl←" }
     ID.yearDec = #I
-    I[#I + 1] = { F.DI_TEXT, 5, 3, 0, 3, 0, 0, 0, 0, Localization().Year }
+    I[#I + 1] = { F.DI_TEXT, 5, 3, 0, 3, 0, 0, 0, 0, L.Year }
     I[#I + 1] = { F.DI_FIXEDIT, 7, 3, 11, 3, 0, 0, "9999", F.DIF_MASKEDIT, "" }
     ID.year = #I
     I[#I + 1] = { F.DI_BUTTON, 7, 4, 0, 4, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl→" }
     ID.yearInc = #I
     I[#I + 1] = { F.DI_BUTTON, 15, 2, 0, 2, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl↑" }
     ID.monthDec = #I
-    I[#I + 1] = { F.DI_TEXT, 13, 3, 0, 3, 0, 0, 0, 0, Localization().Month }
+    I[#I + 1] = { F.DI_TEXT, 13, 3, 0, 3, 0, 0, 0, 0, L.Month }
     -- FAR has Polish localization; Polish has “październik” (11 chars). Note: e.g. Moroccan Arabic has a 15-char month name
     I[#I + 1] = { F.DI_COMBOBOX, 15, 3, 22, 3, ComboMonths, 0, 0, F.DIF_DROPDOWNLIST + F.DIF_LISTNOAMPERSAND + F.DIF_LISTAUTOHIGHLIGHT, "" }
     ID.month = #I
     I[#I + 1] = { F.DI_BUTTON, 15, 4, 0, 4, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl↓" }
     ID.monthInc = #I
-    I[#I + 1] = { F.DI_RADIOBUTTON, 25, 2, 0, 2, Settings.FirstSunday and 0 or 1, 0, 0, 0, Localization().Mon }
+    I[#I + 1] = { F.DI_RADIOBUTTON, 25, 2, 0, 2, Settings.FirstSunday and 0 or 1, 0, 0, 0, L.Mon }
     ID.firstMo = #I
-    I[#I + 1] = { F.DI_RADIOBUTTON, 25, 3, 0, 3, Settings.FirstSunday and 1 or 0, 0, 0, 0, Localization().Sun }
+    I[#I + 1] = { F.DI_RADIOBUTTON, 25, 3, 0, 3, Settings.FirstSunday and 1 or 0, 0, 0, 0, L.Sun }
     ID.firstSu = #I
 
-    I[#I + 1] = { F.DI_TEXT, 20, 4, 30, 4, 0, 0, 0, F.DIF_RIGHTTEXT, Localization().Select }
+    I[#I + 1] = { F.DI_TEXT, 20, 4, 30, 4, 0, 0, 0, F.DIF_RIGHTTEXT, L.Select }
     local row = 5
     for d = 1, 7 do
         I[#I + 1] = { F.DI_TEXT, d * 4 + 1, row, 0, row, 0, 0, 0, 0, "" }
@@ -240,27 +230,27 @@ local function ExecCalendar()
     ID.userControl = #I
     I[#I + 1] = { F.DI_TEXT, 5, 12, 28, 12, 0, 0, 0, 0, "Ctrl(Shift,Alt)[F1-F3,LMB]" }
     ID.hotKeys = #I
-    I[#I + 1] = { F.DI_TEXT, 5, 13, 0, 13, 0, 0, 0, 0, Localization().DateFormat }
+    I[#I + 1] = { F.DI_TEXT, 5, 13, 0, 13, 0, 0, 0, 0, L.DateFormat }
     I[#I + 1] = { F.DI_EDIT, 7, 13, 15, 13, 0, "Format", 0, F.DIF_HISTORY, Settings.Format }
     ID.format = #I
-    I[#I + 1] = { F.DI_TEXT, 18, 13, 0, 13, 0, 0, 0, 0, Localization().Info }
+    I[#I + 1] = { F.DI_TEXT, 18, 13, 0, 13, 0, 0, 0, 0, L.Info }
     I[#I + 1] = { F.DI_EDIT, 20, 13, 29, 13, 0, "Info", 0, F.DIF_HISTORY, Settings.Info }
     ID.info = #I
-    I[#I + 1] = { F.DI_BUTTON, 7, 14, 0, 14, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, Localization().Help }
+    I[#I + 1] = { F.DI_BUTTON, 7, 14, 0, 14, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, L.Help }
     ID.help = #I
-    I[#I + 1] = { F.DI_TEXT, 5, 15, 0, 15, 0, 0, 0, 0, Localization().FormattedDate }
+    I[#I + 1] = { F.DI_TEXT, 5, 15, 0, 15, 0, 0, 0, 0, L.FormattedDate }
     I[#I + 1] = { F.DI_EDIT, 7, 15, 18, 15, 0, 0, 0, F.DIF_SELECTONENTRY, "" }
     ID.textDate = #I
     I[#I + 1] = { F.DI_TEXT, 20, 15, 29, 15, 0, 0, 0, 0, "" }
     ID.textInfo = #I
-    I[#I + 1] = { F.DI_BUTTON, 7, 16, 17, 16, 0, 0, 0, F.DIF_BTNNOCLOSE, Localization().Refresh }
+    I[#I + 1] = { F.DI_BUTTON, 7, 16, 17, 16, 0, 0, 0, F.DIF_BTNNOCLOSE, L.Refresh }
     ID.parse = #I
-    I[#I + 1] = { F.DI_BUTTON, 20, 16, 29, 16, 0, 0, 0, F.DIF_BTNNOCLOSE, Localization().Today }
+    I[#I + 1] = { F.DI_BUTTON, 20, 16, 29, 16, 0, 0, 0, F.DIF_BTNNOCLOSE, L.Today }
     ID.today = #I
     I[#I + 1] = { F.DI_TEXT, 0, 17, 0, 16, 0, 0, 0, F.DIF_SEPARATOR, "" }
-    I[#I + 1] = { F.DI_BUTTON, 0, 18, 0, 18, 0, 0, 0, F.DIF_CENTERGROUP + F.DIF_DEFAULTBUTTON, Localization().Insert }
+    I[#I + 1] = { F.DI_BUTTON, 0, 18, 0, 18, 0, 0, 0, F.DIF_CENTERGROUP + F.DIF_DEFAULTBUTTON, L.Insert }
     ID.insert = #I
-    I[#I + 1] = { F.DI_BUTTON, 0, 18, 0, 18, 0, 0, 0, F.DIF_CENTERGROUP, Localization().Copy }
+    I[#I + 1] = { F.DI_BUTTON, 0, 18, 0, 18, 0, 0, 0, F.DIF_CENTERGROUP, L.Copy }
     ID.copyDate = #I
 
     CF[ID.yearInc] = Colors.Disabled
@@ -295,7 +285,7 @@ local function ExecCalendar()
 
         for d = 1, 7 do
             local id = ID.table - 7 + (Settings.FirstSunday and mod(d, 7) + 1 or d)
-            SendDlgMessage(hDlg, "DM_SETTEXT", id, Localization().DaysOfWeek[d])
+            SendDlgMessage(hDlg, "DM_SETTEXT", id, L.DaysOfWeek[d])
             CF[id] = d > 5 and Colors.Weekend or nil
         end
 
@@ -385,7 +375,7 @@ local function ExecCalendar()
 
     local function MenuSettings(name)
         local props = {
-            Title = Localization().Format,
+            Title = L.Format,
         }
         local items = {}
         for i = 1, #DayFormats do
@@ -419,7 +409,7 @@ local function ExecCalendar()
             SendDlgMessage(hDlg, "DM_ADDHISTORY", ID.info, Settings.Info, 1)
             Redraw(hDlg)
         elseif Msg == F.DN_HELP or (Msg == F.DN_BTNCLICK and Param1 == ID.help) then
-            os.execute "start https://github.com/dimfishr/Far_Macros#format"
+            Help()
         elseif Param1 == ID.insert then
             Text = GetDateText(hDlg)
         elseif Param1 == -1 then
@@ -570,6 +560,6 @@ local function ExecCalendar()
 end
 
 Macro {
-    area = "Common"; key = Key; description = Localization().Title; flags = "";
+    area = "Common"; key = Key; description = L.Title; flags = "";
     action = ExecCalendar;
 }

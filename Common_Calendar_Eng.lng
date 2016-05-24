@@ -1,0 +1,19 @@
+﻿return {
+    Title = "Calendar"; 
+    Help = "F1 - Help";
+    DaysOfWeek = { "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su" }; 
+    Mon = "M&o"; 
+    Sun = "S&u";
+    Months = { "&January", "&February", "&March", "&April", "Ma&y", "Ju&ne", "Ju&ly", "Au&gust", "&September", "&October", "&November", "&December" };
+    Year = '&Y:'; 
+    Month = '&M:'; 
+    Format = "Format"; 
+    DateFormat = '&F:'; 
+    Info = '&I:'; 
+    FormattedDate = '&D:';
+    Today = "&Today"; 
+    Select = '&Select:'; 
+    Refresh = "&Refresh"; 
+    Insert = "Insert"; 
+    Copy = "&Copy";
+}

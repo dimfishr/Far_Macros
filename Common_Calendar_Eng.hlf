@@ -1,0 +1,71 @@
+﻿.Language=English,English
+.Options CtrlColorChar=\
+.Options CtrlStartPosChar=^<wrap>
+
+@contents
+$ # Calendar: Keys #
+  #Ctrl+Arrows#            - ^<wrap>Change Month/Year.
+  #Ctrl+Ins, Ctrl+C#       - ^<wrap>Copy to Clipboard.
+
+  #Ctrl+LMB#               - ^<wrap>Change Color of Selected Today, Selected or Today under cursor
+  #Ctrl+Shift+LMB#         - ^<wrap>Change Color of Selected Today Weekend, Selected Weekend or Today Weekend under cursor
+  #Ctrl+Alt+LMB#           - ^<wrap>Change Format of Selected Today, Selected or Today under cursor
+
+  #Ctrl+[F1,F2,F3]#        - ^<wrap>Change Color of Selected Today(#F1#), Selected(#F2#) or Today(#F3#)
+  #Ctrl+Shift+[F1,F2,F3]#  - ^<wrap>Change Color of Selected Today Weekend(#F1#), Selected Weekend(#F2#) or Today Weekend(#F3#)
+  #Ctrl+Alt+[F1,F2,F3]#    - ^<wrap>Change Format of Selected Today(#F1#), Selected(#F2#) or Today(#F3#)
+
+  #F1#                     - ^<wrap>This help.
+
+ # ~Format specification~@formats@ #
+
+  Source Code            - ^<wrap> ~https://github.com/~@https://github.com/dimfishr/Far_Macros@
+  Online Forum           - ^<wrap> ~http://forum.farmanager.com/~@http://forum.farmanager.com/viewtopic.php?f=15&t=10263@
+
+@formats
+$ # Calendar: Format specification#
+  #%a#         - ^<wrap>Abbreviated weekday name (Sun)
+  #%A#         - ^<wrap>Full weekday name (Sunday)
+  #%b#         - ^<wrap>Abbreviated month name (Dec)
+  #%B#         - ^<wrap>Full month name (December)
+  #%C#         - ^<wrap>Year/100 (19, 20, 30)
+  #%d#         - ^<wrap>The day of the month as a number (range 1 - 31)
+  #%g#         - ^<wrap>year for ISO 8601 week, from 00 (79)
+  #%G#         - ^<wrap>year for ISO 8601 week, from 0000 (1979)
+  #%h#         - ^<wrap>same as %b
+  #%H#         - ^<wrap>hour of the 24-hour day, from 00 (06)
+  #%I#         - ^<wrap>The hour as a number using a 12-hour clock (01 - 12)
+  #%j#         - ^<wrap>The day of the year as a number (001 - 366)
+  #%m#         - ^<wrap>Month of the year, from 01 to 12
+  #%M#         - ^<wrap>Minutes after the hour 55
+  #%p#         - ^<wrap>AM/PM indicator (AM)
+  #%S#         - ^<wrap>The second as a number (59, 20 , 01)
+  #%u#         - ^<wrap>ISO 8601 day of the week, to 7 for Sunday (7, 1)
+  #%U#         - ^<wrap>Sunday week of the year, from 00 (48)
+  #%V#         - ^<wrap>ISO 8601 week of the year, from 01 (48)
+  #%w#         - ^<wrap>The day of the week as a decimal, Sunday being 0
+  #%W#         - ^<wrap>Monday week of the year, from 00 (48)
+  #%y#         - ^<wrap>The year as a number without a century (range 00 to 99)
+  #%Y#         - ^<wrap>Year with century (2000, 1914, 0325, 0001)
+  #%z#         - ^<wrap>Time zone offset, the date object is assumed local time (+1000, -0230)
+  #%Z#         - ^<wrap>Time zone name, the date object is assumed local time
+  #%\b#        - ^<wrap>Year, if year is in BCE, prints the BCE Year representation, otherwise result is similar to "%Y" (1 BCE, 40 BCE)
+  #%\f#        - ^<wrap>Seconds including fraction (59.998, 01.123)
+  #%%#         - ^<wrap>percent character %
+  #%r#         - ^<wrap>12-hour time, from 01:00:00 AM (06:55:15 AM); same as "%I:%M:%S %p"
+  #%R#         - ^<wrap>hour:minute, from 01:00 (06:55); same as "%I:%M"
+  #%T#         - ^<wrap>24-hour time, from 00:00:00 (06:55:15); same as "%H:%M:%S"
+  #%D#         - ^<wrap>month/day/year from 01/01/00 (12/02/79); same as "%m/%d/%y"
+  #%F#         - ^<wrap>year-month-day (1979-12-02); same as "%Y-%m-%d"
+  #%c#         - ^<wrap>The preferred date and time representation; same as "%x %X"
+  #%x#         - ^<wrap>The preferred date representation, same as "%a %b %d %\b"
+  #%X#         - ^<wrap>The preferred time representation, same as "%H:%M:%\f"
+  #${iso}#     - ^<wrap>Iso format, same as "%Y-%m-%dT%T"
+  #${http}#    - ^<wrap>http format, same as "%a, %d %b %Y %T GMT"
+  #${ctime}#   - ^<wrap>ctime format, same as "%a %b %d %T GMT %Y"
+  #${rfc850}#  - ^<wrap>RFC850 format, same as "%A, %d-%b-%y %T GMT"
+  #${rfc1123}# - ^<wrap>RFC1123 format, same as "%a, %d %b %Y %T GMT"
+  #${asctime}# - ^<wrap>asctime format, same as "%a %b %d %T %Y"
+
+^~Back~@contents@
+
