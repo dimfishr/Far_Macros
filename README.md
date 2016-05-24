@@ -9,8 +9,9 @@
 * Parse date by selected format or any format
 * Hotkeys: Ctrl+Arrows - change Month/Year
 * Hotkeys: Ctrl+Ins, Ctrl+C - copy to Clipboard
-* Hotkeys: Ctrl+\[F1,F2,F3,MouseClick\] - change Color of Selected Today or Selected or Today 
-* Hotkeys: Ctrl+Alt+\[F1,F2,F3,MouseClick\] - change Format of Selected Today or Selected or Today 
+* Hotkeys: Ctrl+\[F1,F2,F3,LMB\] - change Color of Selected Today or Selected or Today 
+* Hotkeys: Ctrl+Shift+\[F1,F2,F3,LMB\] - change Color of Selected Today Weekend or Selected Weekend or Today Weekend 
+* Hotkeys: Ctrl+Alt+\[F1,F2,F3,LMB\] - change Format of Selected Today or Selected or Today 
 
 #### Format
 |Spec|Description|

@@ -61,8 +61,10 @@ local function Localization()
 end
 
 local VK = { Enter = 13; Left = 37; Up = 38; Right = 39; Down = 40; Ins = 45, C = 67, F1 = 112, F2 = 113, F3 = 114 }
-local leftOrRightCtrl = 0x0008 + 0x0004
-local leftOrRightAlt = 0x0001 + 0x0002
+local LeftOrRightCtrl = 0x0008 + 0x0004
+local LeftOrRightAlt = 0x0001 + 0x0002
+local Shift = 0x0010
+
 
 local F = far.Flags
 local SendDlgMessage = far.SendDlgMessage
@@ -193,6 +195,9 @@ local function ExecCalendar()
     Settings.Today = Settings.Today or 0x87
     Settings.Selected = Settings.Selected or 0x3E
     Settings.SelectedToday = Settings.SelectedToday or 0x3E
+    Settings.TodayWeekend = Settings.TodayWeekend or 0x84
+    Settings.SelectedWeekend = Settings.SelectedWeekend or 0x3E
+    Settings.SelectedTodayWeekend = Settings.SelectedTodayWeekend or 0x3E
     Settings.FormatToday = Settings.FormatToday or DayFormats[1]
     Settings.FormatSelected = Settings.FormatSelected or DayFormats[1]
     Settings.FormatSelectedToday = Settings.FormatSelectedToday or DayFormats[1]
@@ -233,7 +238,7 @@ local function ExecCalendar()
 
     I[#I + 1] = { F.DI_USERCONTROL, 4, row + 1, 31, row + 6, 0, 0, 0, F.DIF_FOCUS }
     ID.userControl = #I
-    I[#I + 1] = { F.DI_TEXT, 6, 12, 28, 12, 0, 0, 0, 0, "Ctrl(Alt)[F1,F2,F3,Mouse]" }
+    I[#I + 1] = { F.DI_TEXT, 5, 12, 28, 12, 0, 0, 0, 0, "Ctrl(Shift,Alt)[F1-F3,LMB]" }
     ID.hotKeys = #I
     I[#I + 1] = { F.DI_TEXT, 5, 13, 0, 13, 0, 0, 0, 0, Localization().DateFormat }
     I[#I + 1] = { F.DI_EDIT, 7, 13, 15, 13, 0, "Format", 0, F.DIF_HISTORY, Settings.Format }
@@ -309,16 +314,16 @@ local function ExecCalendar()
                 tableSelected = daySelected and currentId or tableSelected
 
                 if daySelected and dayIsToday then
-                    CB[id] = getBG(Settings.SelectedToday)
-                    CF[id] = getFG(Settings.SelectedToday)
+                    CB[id] = getBG(dayIsWeekend and Settings.SelectedTodayWeekend or Settings.SelectedToday)
+                    CF[id] = getFG(dayIsWeekend and Settings.SelectedTodayWeekend or Settings.SelectedToday)
                     dayFormat = Settings.FormatSelectedToday
                 elseif daySelected then
-                    CB[id] = getBG(Settings.Selected)
-                    CF[id] = getFG(Settings.Selected)
+                    CB[id] = getBG(dayIsWeekend and Settings.SelectedWeekend or Settings.Selected)
+                    CF[id] = getFG(dayIsWeekend and Settings.SelectedWeekend or Settings.Selected)
                     dayFormat = Settings.FormatSelected
                 elseif dayIsToday then
-                    CB[id] = getBG(Settings.Today)
-                    CF[id] = getFG(Settings.Today)
+                    CB[id] = getBG(dayIsWeekend and Settings.TodayWeekend or Settings.Today)
+                    CF[id] = getFG(dayIsWeekend and Settings.TodayWeekend or Settings.Today)
                     dayFormat = Settings.FormatToday
                 elseif day:getmonth() ~= dt:getmonth() then
                     CF[id] = Colors.Disabled
@@ -414,7 +419,7 @@ local function ExecCalendar()
             SendDlgMessage(hDlg, "DM_ADDHISTORY", ID.info, Settings.Info, 1)
             Redraw(hDlg)
         elseif Msg == F.DN_HELP or (Msg == F.DN_BTNCLICK and Param1 == ID.help) then
-            os.execute 'start https://github.com/dimfishr/Far_Macros#format'
+            os.execute "start https://github.com/dimfishr/Far_Macros#format"
         elseif Param1 == ID.insert then
             Text = GetDateText(hDlg)
         elseif Param1 == -1 then
@@ -470,8 +475,8 @@ local function ExecCalendar()
             Redraw(hDlg)
         elseif Msg == F.DN_CONTROLINPUT then
             if Param1 ~= ID.month and Param1 ~= ID.format and Param1 ~= ID.info and Param2.ControlKeyState and
-                    band(Param2.ControlKeyState, leftOrRightCtrl) ~= 0 and
-                    band(Param2.ControlKeyState, leftOrRightAlt) == 0 then
+                    band(Param2.ControlKeyState, LeftOrRightCtrl) ~= 0 and
+                    band(Param2.ControlKeyState, LeftOrRightAlt) == 0 then
                 if Param2.VirtualKeyCode == VK.Left then
                     dt:addyears(-1)
                 elseif Param2.VirtualKeyCode == VK.Up then
@@ -484,21 +489,22 @@ local function ExecCalendar()
                     CopyToClipboard(GetDateText(hDlg))
                     return
                 elseif Param1 == ID.userControl then
+                    local week = band(Param2.ControlKeyState, Shift) ~= 0 and "Weekend" or ""
                     if Param2.VirtualKeyCode == VK.F1 then
-                        ColorSettings("SelectedToday")
+                        ColorSettings("SelectedToday" .. week)
                     elseif Param2.VirtualKeyCode == VK.F2 then
-                        ColorSettings("Selected")
+                        ColorSettings("Selected" .. week)
                     elseif Param2.VirtualKeyCode == VK.F3 then
-                        ColorSettings("Today")
+                        ColorSettings("Today" .. week)
                     elseif Param2.ButtonState == 1 then
                         local delta = getDelta(Param2)
                         local isToday = dt:getyear() == today:getyear() and dt:getmonth() == today:getmonth() and dt:getday() + delta == today:getday()
                         if delta == 0 and isToday then
-                            ColorSettings("SelectedToday")
+                            ColorSettings("SelectedToday" .. week)
                         elseif delta == 0 then
-                            ColorSettings("Selected")
+                            ColorSettings("Selected" .. week)
                         elseif isToday then
-                            ColorSettings("Today")
+                            ColorSettings("Today" .. week)
                         else
                             return
                         end
@@ -510,8 +516,8 @@ local function ExecCalendar()
                 end
                 Redraw(hDlg)
             elseif Param1 == ID.userControl and Param2.ControlKeyState and
-                    band(Param2.ControlKeyState, leftOrRightCtrl) ~= 0 and
-                    band(Param2.ControlKeyState, leftOrRightAlt) ~= 0 then
+                    band(Param2.ControlKeyState, LeftOrRightCtrl) ~= 0 and
+                    band(Param2.ControlKeyState, LeftOrRightAlt) ~= 0 then
                 if Param2.VirtualKeyCode == VK.F1 then
                     MenuSettings("FormatSelectedToday")
                 elseif Param2.VirtualKeyCode == VK.F2 then
