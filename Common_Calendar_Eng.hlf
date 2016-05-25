@@ -52,7 +52,7 @@ $ # Calendar: Format specification#
   #%W#         - ^<wrap>Monday week of the year, from 00 (48)
   #%y#         - ^<wrap>The year as a number without a century (range 00 to 99)
   #%Y#         - ^<wrap>Year with century (2000, 1914, 0325, 0001)
-  #%z#         - ^<wrap>Time zone offset, the date object is assumed local time (-1000, -0230)
+  #%z#         - ^<wrap>Time zone offset, the date object is assumed local time (+1000, -0230)
   #%Z#         - ^<wrap>Time zone name, the date object is assumed local time
   #%\b#        - ^<wrap>Year, if year is in BCE, prints the BCE Year representation, otherwise result is similar to "%Y" (1 BCE, 40 BCE)
   #%\f#        - ^<wrap>Seconds including fraction (59.998, 01.123)

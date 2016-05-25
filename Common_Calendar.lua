@@ -407,7 +407,8 @@ local function ExecCalendar()
             FarSendDlgMessage(hDlg, "DM_ADDHISTORY", ID.info, Settings.Info, 1)
             Redraw(hDlg)
         elseif Msg == F.DN_HELP or (Msg == F.DN_BTNCLICK and Param1 == ID.help) then
-            CalendarHelp()
+            local topic = (Param1 == ID.format or Param1 == ID.info) and "formats" or nil
+            CalendarHelp(topic)
         elseif Param1 == ID.insert then
             Text = GetDateText(hDlg)
         elseif Param1 == -1 then
