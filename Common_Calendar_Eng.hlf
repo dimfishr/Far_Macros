@@ -72,5 +72,5 @@ $ # Calendar: Format specification#
   #${rfc1123}# - ^<wrap>RFC1123 format, same as "%a, %d %b %Y %T GMT"
   #${asctime}# - ^<wrap>asctime format, same as "%a %b %d %T %Y"
 
-^~Back~@contents@
+^~Contents~@contents@
 
