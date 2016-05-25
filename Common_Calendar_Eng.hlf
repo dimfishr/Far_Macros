@@ -4,22 +4,27 @@
 
 @contents
 $ # Calendar: Keys #
-  #Ctrl+Arrows#            - ^<wrap>Change Month/Year.
-  #Ctrl+Ins, Ctrl+C#       - ^<wrap>Copy to Clipboard.
+  #←, →#                   - ^<wrap>Change Day.
+  #↑, ↓#                   - ^<wrap>Change Week.
+  #Ctrl-↑, Ctrl-↓#         - ^<wrap>Change Month.
+  #Ctrl-←, Ctrl-→#         - ^<wrap>Change Year.
 
-  #Ctrl+LMB#               - ^<wrap>Change Color of Selected Today, Selected or Today under cursor
-  #Ctrl+Shift+LMB#         - ^<wrap>Change Color of Selected Today Weekend, Selected Weekend or Today Weekend under cursor
-  #Ctrl+Alt+LMB#           - ^<wrap>Change Format of Selected Today, Selected or Today under cursor
+  #Ctrl-LMB#               - ^<wrap>Change Color of Selected Today, Selected or Today under cursor
+  #Ctrl-Shift-LMB#         - ^<wrap>Change Color of Selected Today Weekend, Selected Weekend or Today Weekend under cursor
+  #Ctrl-Alt-LMB#           - ^<wrap>Change Format of Selected Today, Selected or Today under cursor
 
-  #Ctrl+[F1,F2,F3]#        - ^<wrap>Change Color of Selected Today(#F1#), Selected(#F2#) or Today(#F3#)
-  #Ctrl+Shift+[F1,F2,F3]#  - ^<wrap>Change Color of Selected Today Weekend(#F1#), Selected Weekend(#F2#) or Today Weekend(#F3#)
-  #Ctrl+Alt+[F1,F2,F3]#    - ^<wrap>Change Format of Selected Today(#F1#), Selected(#F2#) or Today(#F3#)
+  #Ctrl-[F1,F2,F3]#        - ^<wrap>Change Color of Selected Today(#F1#), Selected(#F2#) or Today(#F3#)
+  #Ctrl-Shift-[F1,F2,F3]#  - ^<wrap>Change Color of Selected Today Weekend(#F1#), Selected Weekend(#F2#) or Today Weekend(#F3#)
+  #Ctrl-Alt-[F1,F2,F3]#    - ^<wrap>Change Format of Selected Today(#F1#), Selected(#F2#) or Today(#F3#)
+
+  #Ctrl-Ins, Ctrl-C#       - ^<wrap>Copy to Clipboard.
 
   #F1#                     - ^<wrap>This help.
 
- # ~Format specification~@formats@ #
+  ~Format specification~@formats@
 
   Source Code            - ^<wrap> ~https://github.com/~@https://github.com/dimfishr/Far_Macros@
+
   Online Forum           - ^<wrap> ~http://forum.farmanager.com/~@http://forum.farmanager.com/viewtopic.php?f=15&t=10263@
 
 @formats
@@ -47,7 +52,7 @@ $ # Calendar: Format specification#
   #%W#         - ^<wrap>Monday week of the year, from 00 (48)
   #%y#         - ^<wrap>The year as a number without a century (range 00 to 99)
   #%Y#         - ^<wrap>Year with century (2000, 1914, 0325, 0001)
-  #%z#         - ^<wrap>Time zone offset, the date object is assumed local time (+1000, -0230)
+  #%z#         - ^<wrap>Time zone offset, the date object is assumed local time (-1000, -0230)
   #%Z#         - ^<wrap>Time zone name, the date object is assumed local time
   #%\b#        - ^<wrap>Year, if year is in BCE, prints the BCE Year representation, otherwise result is similar to "%Y" (1 BCE, 40 BCE)
   #%\f#        - ^<wrap>Seconds including fraction (59.998, 01.123)

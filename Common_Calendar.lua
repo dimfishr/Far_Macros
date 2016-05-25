@@ -2,7 +2,7 @@
 -- Calendar by dimfish
 -------------------------------------------------------------------------------
 
-local Key = "CtrlShiftF11"
+local CalendarKey = "CtrlShiftF11"
 
 local Formats = {
     "%d.%m.%Y",
@@ -16,7 +16,7 @@ local Formats = {
     "%d-%b-%Y",
 }
 
-local Info = {
+local InfoFormats = {
     "[%U] [%j]",
     "[%V] [%j]",
     "[%W] [%j]",
@@ -31,27 +31,32 @@ local DayFormats = {
     "-%2s-",
 }
 
-local Colors = {
+local CalendarColors = {
     Normal = 0x0,
     Weekend = 0x4,
     Selected = 0xE,
     Disabled = 0x8,
 }
 
-
 local VK = { Enter = 13; Left = 37; Up = 38; Right = 39; Down = 40; Ins = 45, C = 67, F1 = 112, F2 = 113, F3 = 114 }
 local LeftOrRightCtrl = 0x0008 + 0x0004
 local LeftOrRightAlt = 0x0001 + 0x0002
-local Shift = 0x0010
-
+local LeftOrRightShift = 0x0010
 
 local F = far.Flags
-local SendDlgMessage = far.SendDlgMessage
-local CopyToClipboard = far.CopyToClipboard
-local ColorDialog = far.ColorDialog
-local ShowHelp = far.ShowHelp
-local Dialog = far.Dialog
-local Menu = far.Menu
+local FarSendDlgMessage = far.SendDlgMessage
+local FarCopyToClipboard = far.CopyToClipboard
+local FarColorDialog = far.ColorDialog
+local FarShowHelp = far.ShowHelp
+local FarDialog = far.Dialog
+local FarMenu = far.Menu
+
+local WinUuid = win.Uuid
+local WinGetEnv = win.GetEnv
+local WinGetFileAttr = win.GetFileAttr
+
+local mfmload = mf.mload
+local mfmsave = mf.msave
 local fmt = string.format
 local band = bit.band
 local bshr = bit.rshift
@@ -62,17 +67,12 @@ local print = print
 local dofile = dofile
 local floor = math.floor
 local sort = table.sort
-local mfload = mf.mload
-local mfsave = mf.msave
-local Uuid = win.Uuid
-local GetEnv = win.GetEnv
-local GetFileAttr = win.GetFileAttr
 
 local date = require("date")
 
-local FL = GetEnv("FARLANG"):sub(1, 3)
-local Path = (...):match("(.*)%.lua") .. "_"
-local L = dofile(Path .. (GetFileAttr(Path .. FL .. ".lng") and FL or "Eng") .. ".lng")
+local FarLang = WinGetEnv("FARLANG"):sub(1, 3)
+local MacrosPath = (...):match("(.*)%.lua") .. "_"
+local L = dofile(MacrosPath .. (WinGetFileAttr(MacrosPath .. FarLang .. ".lul") and FarLang or "Eng") .. ".lul")
 
 local function mod(n, d) return n - d * floor(n / d) end
 
@@ -80,13 +80,11 @@ local function getFG(c) return band(c, 0x0F) end
 
 local function getBG(c) return bshr(band(c, 0xF0), 4) end
 
-local function mload() return mfload("dimfish", "Calendar") end
+local function LoadCalendarSettings() return mfmload("dimfish", "Calendar") end
 
-local function msave(s) mfsave("dimfish", "Calendar", s) end
+local function SaveCalendarSettings(s) mfmsave("dimfish", "Calendar", s) end
 
-local function Help(a)
-    ShowHelp(Path .. (GetFileAttr(Path .. FL .. ".hlf") and FL or "Eng") .. ".hlf", a, F.FHELP_CUSTOMFILE)
-end
+local function CalendarHelp(a) FarShowHelp(MacrosPath .. (WinGetFileAttr(MacrosPath .. FarLang .. ".hlf") and FarLang or "Eng") .. ".hlf", a, F.FHELP_CUSTOMFILE) end
 
 local function ParseDateFormat(format, text)
     local months = { jan = 1, feb = 2, mar = 3, apr = 4, may = 5, jun = 6, jul = 7, aug = 8, sep = 9, oct = 10, nov = 11, dec = 12 }
@@ -180,7 +178,7 @@ local function ExecCalendar()
     local CB = {}
     local ComboMonths = {} for i = 1, 12 do ComboMonths[i] = { Text = L.Months[i] } end
 
-    local Settings = mload() or { Format = Formats[1], Info = Info[1] }
+    local Settings = LoadCalendarSettings() or { Format = Formats[1], Info = InfoFormats[1] }
 
     Settings.Today = Settings.Today or 0x87
     Settings.Selected = Settings.Selected or 0x3E
@@ -253,28 +251,28 @@ local function ExecCalendar()
     I[#I + 1] = { F.DI_BUTTON, 0, 18, 0, 18, 0, 0, 0, F.DIF_CENTERGROUP, L.Copy }
     ID.copyDate = #I
 
-    CF[ID.yearInc] = Colors.Disabled
-    CF[ID.yearDec] = Colors.Disabled
-    CF[ID.monthInc] = Colors.Disabled
-    CF[ID.monthDec] = Colors.Disabled
-    CF[ID.textDate] = Colors.Selected
-    CF[ID.firstSu] = Colors.Weekend
-    CF[ID.help] = Colors.Disabled
-    CF[ID.hotKeys] = Colors.Disabled
+    CF[ID.yearInc] = CalendarColors.Disabled
+    CF[ID.yearDec] = CalendarColors.Disabled
+    CF[ID.monthInc] = CalendarColors.Disabled
+    CF[ID.monthDec] = CalendarColors.Disabled
+    CF[ID.textDate] = CalendarColors.Selected
+    CF[ID.firstSu] = CalendarColors.Weekend
+    CF[ID.help] = CalendarColors.Disabled
+    CF[ID.hotKeys] = CalendarColors.Disabled
 
     local function GetDateText(hDlg)
-        return SendDlgMessage(hDlg, "DM_GETTEXT", ID.textDate, 0)
+        return FarSendDlgMessage(hDlg, "DM_GETTEXT", ID.textDate, 0)
     end
 
     local function UpdateControlsState(hDlg)
-        SendDlgMessage(hDlg, "DM_ENABLE", ID.parse, ParseDate(Settings.Format, GetDateText(hDlg)) and 1 or 0)
+        FarSendDlgMessage(hDlg, "DM_ENABLE", ID.parse, ParseDate(Settings.Format, GetDateText(hDlg)) and 1 or 0)
     end
 
     local function Redraw(hDlg)
         isRendering = true
-        SendDlgMessage(hDlg, "DM_ENABLEREDRAW", 0)
-        SendDlgMessage(hDlg, "DM_SETTEXT", ID.year, dt:fmt("%Y"))
-        SendDlgMessage(hDlg, "DM_LISTSETCURPOS", ID.month, { SelectPos = dt:getmonth() })
+        FarSendDlgMessage(hDlg, "DM_ENABLEREDRAW", 0)
+        FarSendDlgMessage(hDlg, "DM_SETTEXT", ID.year, dt:fmt("%Y"))
+        FarSendDlgMessage(hDlg, "DM_LISTSETCURPOS", ID.month, { SelectPos = dt:getmonth() })
 
         local day = date(dt:getyear(), dt:getmonth(), 1)
         if Settings.FirstSunday then
@@ -285,8 +283,8 @@ local function ExecCalendar()
 
         for d = 1, 7 do
             local id = ID.table - 7 + (Settings.FirstSunday and mod(d, 7) + 1 or d)
-            SendDlgMessage(hDlg, "DM_SETTEXT", id, L.DaysOfWeek[d])
-            CF[id] = d > 5 and Colors.Weekend or nil
+            FarSendDlgMessage(hDlg, "DM_SETTEXT", id, L.DaysOfWeek[d])
+            CF[id] = d > 5 and CalendarColors.Weekend or nil
         end
 
         for w = 0, 5 do
@@ -316,24 +314,24 @@ local function ExecCalendar()
                     CF[id] = getFG(dayIsWeekend and Settings.TodayWeekend or Settings.Today)
                     dayFormat = Settings.FormatToday
                 elseif day:getmonth() ~= dt:getmonth() then
-                    CF[id] = Colors.Disabled
+                    CF[id] = CalendarColors.Disabled
                 elseif dayIsWeekend then
-                    CF[id] = Colors.Weekend
+                    CF[id] = CalendarColors.Weekend
                 else
-                    CF[id] = Colors.Normal
+                    CF[id] = CalendarColors.Normal
                 end
 
-                SendDlgMessage(hDlg, "DM_ENABLE", id, day:getmonth() == dt:getmonth() and 1 or 0)
-                SendDlgMessage(hDlg, "DM_SETTEXT", id, fmt(dayFormat, day:getday()))
+                FarSendDlgMessage(hDlg, "DM_ENABLE", id, day:getmonth() == dt:getmonth() and 1 or 0)
+                FarSendDlgMessage(hDlg, "DM_SETTEXT", id, fmt(dayFormat, day:getday()))
                 day:adddays(1)
             end
         end
-        SendDlgMessage(hDlg, "DM_SETTEXT", ID.title, dt:fmt(Settings.Format))
-        SendDlgMessage(hDlg, "DM_SETTEXT", ID.textDate, dt:fmt(Settings.Format))
-        SendDlgMessage(hDlg, "DM_SETTEXT", ID.textInfo, dt:fmt(Settings.Info))
+        FarSendDlgMessage(hDlg, "DM_SETTEXT", ID.title, dt:fmt(Settings.Format))
+        FarSendDlgMessage(hDlg, "DM_SETTEXT", ID.textDate, dt:fmt(Settings.Format))
+        FarSendDlgMessage(hDlg, "DM_SETTEXT", ID.textInfo, dt:fmt(Settings.Info))
 
         UpdateControlsState(hDlg)
-        SendDlgMessage(hDlg, "DM_ENABLEREDRAW", 1)
+        FarSendDlgMessage(hDlg, "DM_ENABLEREDRAW", 1)
         isRendering = false
     end
 
@@ -366,10 +364,10 @@ local function ExecCalendar()
     end
 
     local function ColorSettings(name)
-        local color = ColorDialog(Settings[name], F.FCF_FG_4BIT + F.FCF_BG_4BIT)
+        local color = FarColorDialog(Settings[name], F.FCF_FG_4BIT + F.FCF_BG_4BIT)
         if color then
             Settings[name] = color
-            msave(Settings)
+            SaveCalendarSettings(Settings)
         end
     end
 
@@ -385,10 +383,10 @@ local function ExecCalendar()
             }
         end
 
-        local result = Menu(props, items, nil)
+        local result = FarMenu(props, items, nil)
         if result then
             Settings[name] = result.text
-            msave(Settings)
+            SaveCalendarSettings(Settings)
         end
     end
 
@@ -399,41 +397,41 @@ local function ExecCalendar()
             return
         elseif Msg == F.DN_INITDIALOG then
             for i = 1, #Formats do
-                SendDlgMessage(hDlg, "DM_ADDHISTORY", ID.format, Formats[i], i)
+                FarSendDlgMessage(hDlg, "DM_ADDHISTORY", ID.format, Formats[i], i)
             end
-            SendDlgMessage(hDlg, "DM_ADDHISTORY", ID.format, Settings.Format, 1)
+            FarSendDlgMessage(hDlg, "DM_ADDHISTORY", ID.format, Settings.Format, 1)
 
-            for i = 1, #Info do
-                SendDlgMessage(hDlg, "DM_ADDHISTORY", ID.info, Info[i], i)
+            for i = 1, #InfoFormats do
+                FarSendDlgMessage(hDlg, "DM_ADDHISTORY", ID.info, InfoFormats[i], i)
             end
-            SendDlgMessage(hDlg, "DM_ADDHISTORY", ID.info, Settings.Info, 1)
+            FarSendDlgMessage(hDlg, "DM_ADDHISTORY", ID.info, Settings.Info, 1)
             Redraw(hDlg)
         elseif Msg == F.DN_HELP or (Msg == F.DN_BTNCLICK and Param1 == ID.help) then
-            Help()
+            CalendarHelp()
         elseif Param1 == ID.insert then
             Text = GetDateText(hDlg)
         elseif Param1 == -1 then
             Text = ""
         elseif Msg == F.DN_EDITCHANGE then
             if Param1 == ID.year then
-                local selY = tonumber(SendDlgMessage(hDlg, "DM_GETTEXT", Param1, 0))
+                local selY = tonumber(FarSendDlgMessage(hDlg, "DM_GETTEXT", Param1, 0))
                 if selY ~= dt:getyear() then
                     dt:setyear(selY)
                     Redraw(hDlg)
                 end
             elseif Param1 == ID.month then
-                local selM = (SendDlgMessage(hDlg, "DM_LISTGETCURPOS", Param1, 0)).SelectPos
+                local selM = (FarSendDlgMessage(hDlg, "DM_LISTGETCURPOS", Param1, 0)).SelectPos
                 if selM ~= dt:getmonth() then
                     setmonthFix(dt, selM)
                     Redraw(hDlg)
                 end
             elseif Param1 == ID.format then
-                Settings.Format = SendDlgMessage(hDlg, "DM_GETTEXT", Param1, 0)
-                msave(Settings)
+                Settings.Format = FarSendDlgMessage(hDlg, "DM_GETTEXT", Param1, 0)
+                SaveCalendarSettings(Settings)
                 Redraw(hDlg)
             elseif Param1 == ID.info then
-                Settings.Info = SendDlgMessage(hDlg, "DM_GETTEXT", Param1, 0)
-                msave(Settings)
+                Settings.Info = FarSendDlgMessage(hDlg, "DM_GETTEXT", Param1, 0)
+                SaveCalendarSettings(Settings)
                 Redraw(hDlg)
             elseif Param1 == ID.textDate then
                 UpdateControlsState(hDlg)
@@ -449,16 +447,16 @@ local function ExecCalendar()
                 addmonthsFix(dt, 1)
             elseif Param1 == ID.parse then
                 SetDate(hDlg)
-                SendDlgMessage(hDlg, "DM_SETFOCUS", ID.userControl, 0)
+                FarSendDlgMessage(hDlg, "DM_SETFOCUS", ID.userControl, 0)
             elseif Param1 == ID.today then
                 dt = date()
-                SendDlgMessage(hDlg, "DM_SETFOCUS", ID.userControl, 0)
+                FarSendDlgMessage(hDlg, "DM_SETFOCUS", ID.userControl, 0)
             elseif Param1 == ID.copyDate then
-                CopyToClipboard(GetDateText(hDlg))
+                FarCopyToClipboard(GetDateText(hDlg))
                 Text = "" -- do not print
             elseif Param1 == ID.firstSu or Param1 == ID.firstMo then
-                Settings.FirstSunday = SendDlgMessage(hDlg, "DM_GETCHECK", ID.firstSu, 0) == 1 and true or false
-                msave(Settings)
+                Settings.FirstSunday = FarSendDlgMessage(hDlg, "DM_GETCHECK", ID.firstSu, 0) == 1 and true or false
+                SaveCalendarSettings(Settings)
             else
                 return
             end
@@ -476,10 +474,10 @@ local function ExecCalendar()
                 elseif Param2.VirtualKeyCode == VK.Down then
                     addmonthsFix(dt, 1)
                 elseif Param1 ~= ID.textDate and Param2.VirtualKeyCode == VK.Ins or Param2.VirtualKeyCode == VK.C then
-                    CopyToClipboard(GetDateText(hDlg))
+                    FarCopyToClipboard(GetDateText(hDlg))
                     return
                 elseif Param1 == ID.userControl then
-                    local week = band(Param2.ControlKeyState, Shift) ~= 0 and "Weekend" or ""
+                    local week = band(Param2.ControlKeyState, LeftOrRightShift) ~= 0 and "Weekend" or ""
                     if Param2.VirtualKeyCode == VK.F1 then
                         ColorSettings("SelectedToday" .. week)
                     elseif Param2.VirtualKeyCode == VK.F2 then
@@ -554,12 +552,12 @@ local function ExecCalendar()
         end
     end
 
-    local guid = Uuid("06a13b89-3fec-46a2-be11-a50b68ceaa56")
-    Dialog(guid, -1, -1, 36, 21, nil, I, nil, DlgProc)
+    local guid = WinUuid("06a13b89-3fec-46a2-be11-a50b68ceaa56")
+    FarDialog(guid, -1, -1, 36, 21, nil, I, nil, DlgProc)
     if Text then print(Text) end
 end
 
 Macro {
-    area = "Common"; key = Key; description = L.Title; flags = "";
+    area = "Common"; key = CalendarKey; description = L.Title; flags = "";
     action = ExecCalendar;
 }
