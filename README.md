@@ -1,6 +1,6 @@
 #Calendar FAR macro
 
-![alt text](http://i80.fastpic.ru/big/2016/0525/ac/3c1bfcb14666d9e697ba7e5edc4d40ac.png "Calendar")
+![alt text](http://i80.fastpic.ru/big/2016/0526/b3/234f1a9ecef8ef79c92ef5fa4d2790b3.png "Calendar")
 
 ##Features:
 
