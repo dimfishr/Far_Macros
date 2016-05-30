@@ -58,6 +58,7 @@
 |**${rfc850}**|RFC850 format, same as "%A, %d-%b-%y %T GMT"
 |**${rfc1123}**|RFC1123 format, same as "%a, %d %b %Y %T GMT"
 |**${asctime}**|asctime format, same as "%a %b %d %T %Y"
+|**${ru}**|Russian locale for month and week names
 
 [Full Specification](https://tieske.github.io/date/)
 

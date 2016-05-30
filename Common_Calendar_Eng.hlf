@@ -71,6 +71,7 @@ $ # Calendar: Format specification#
   #${rfc850}#  - ^<wrap>RFC850 format, same as "%A, %d-%b-%y %T GMT"
   #${rfc1123}# - ^<wrap>RFC1123 format, same as "%a, %d %b %Y %T GMT"
   #${asctime}# - ^<wrap>asctime format, same as "%a %b %d %T %Y"
+  #${ru}#      - ^<wrap>Russian locale for month and week names
 
 ^~Contents~@contents@
 
