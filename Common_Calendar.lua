@@ -303,7 +303,9 @@ local function ExecCalendar()
 
                 tableSelected = daySelected and currentId or tableSelected
 
-                if daySelected and dayIsToday then
+                if day:getmonth() ~= dt:getmonth() then
+                    CF[id] = CalendarColors.Disabled
+                elseif daySelected and dayIsToday then
                     CB[id] = getBG(dayIsWeekend and Settings.SelectedTodayWeekend or Settings.SelectedToday)
                     CF[id] = getFG(dayIsWeekend and Settings.SelectedTodayWeekend or Settings.SelectedToday)
                     dayFormat = Settings.FormatSelectedToday
@@ -315,8 +317,6 @@ local function ExecCalendar()
                     CB[id] = getBG(dayIsWeekend and Settings.TodayWeekend or Settings.Today)
                     CF[id] = getFG(dayIsWeekend and Settings.TodayWeekend or Settings.Today)
                     dayFormat = Settings.FormatToday
-                elseif day:getmonth() ~= dt:getmonth() then
-                    CF[id] = CalendarColors.Disabled
                 elseif dayIsWeekend then
                     CF[id] = CalendarColors.Weekend
                 else
