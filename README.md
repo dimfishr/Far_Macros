@@ -1,6 +1,6 @@
 #Calendar FAR macro
 
-![alt text](http://i80.fastpic.ru/big/2016/0526/b3/234f1a9ecef8ef79c92ef5fa4d2790b3.png "Calendar")
+![alt text](http://i79.fastpic.ru/big/2016/0530/88/d6073dc13cadcd39bb5d448241510d88.png "Calendar")
 
 ##Features:
 
@@ -69,7 +69,7 @@
 
 ## Requirement
 
-[LuaDate](https://github.com/Tieske/date/)
+[LuaDate](https://github.com/dimfishr/date/)
 
 ## License
 

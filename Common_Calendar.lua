@@ -87,7 +87,7 @@ local function SaveCalendarSettings(s) mfmsave("dimfish", "Calendar", s) end
 local function CalendarHelp(a) FarShowHelp(MacrosPath .. (WinGetFileAttr(MacrosPath .. FarLang .. ".hlf") and FarLang or "Eng") .. ".hlf", a, F.FHELP_CUSTOMFILE) end
 
 local function ParseDateFormat(format, text)
-    local months = { jan = 1, feb = 2, mar = 3, apr = 4, may = 5, jun = 6, jul = 7, aug = 8, sep = 9, oct = 10, nov = 11, dec = 12 }
+    local months = { ['jan'] = 1, ['feb'] = 2, ['mar'] = 3, ['apr'] = 4, ['may'] = 5, ['jun'] = 6, ['jul'] = 7, ['aug'] = 8, ['sep'] = 9, ['oct'] = 10, ['nov'] = 11, ['dec'] = 12, ['янв'] = 1, ['фев'] = 2, ['мар'] = 3, ['апр'] = 4, ['май'] = 5, ['июн'] = 6, ['июл'] = 7, ['авг'] = 8, ['сен'] = 9, ['окт'] = 10, ['ноя'] = 11, ['дек'] = 12, }
     local _, dp, mp, yp, arr, yy, mm, dd, isMonthText
 
     isMonthText = format:find("%%[hbB]")
@@ -102,6 +102,7 @@ local function ParseDateFormat(format, text)
     arr = { { pos = yp, sort = 1 }, { pos = mp, sort = 2 }, { pos = dp, sort = 3 } }
     sort(arr, function(a, b) return (a.pos < b.pos) end)
 
+    format = format:gsub("${%a+}", "")
     format = format:gsub("%%[yYmd]", "(%%d+)"):gsub("%%[hbB]", "(%%a+)")
     format = format:gsub("%-", "%%-"):gsub("%.", "%%."):gsub("%/", "%%/")
 
@@ -190,30 +191,33 @@ local function ExecCalendar()
     Settings.FormatSelected = Settings.FormatSelected or DayFormats[1]
     Settings.FormatSelectedToday = Settings.FormatSelectedToday or DayFormats[1]
 
-    I[#I + 1] = { F.DI_DOUBLEBOX, 3, 1, 32, 19, 0, 0, 0, 0, L.Title }
+    I[#I + 1] = { F.DI_DOUBLEBOX, 3, 1, 32, 20, 0, 0, 0, 0, L.Title }
     ID.title = #I
-    I[#I + 1] = { F.DI_BUTTON, 7, 2, 0, 2, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl←" }
+
+    local row = 2
+    I[#I + 1] = { F.DI_BUTTON, 7, row, 0, row, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl←" }
     ID.yearDec = #I
-    I[#I + 1] = { F.DI_TEXT, 5, 3, 0, 3, 0, 0, 0, 0, L.Year }
-    I[#I + 1] = { F.DI_FIXEDIT, 7, 3, 11, 3, 0, 0, "9999", F.DIF_MASKEDIT, "" }
+    I[#I + 1] = { F.DI_TEXT, 5, row + 1, 0, row + 1, 0, 0, 0, 0, L.Year }
+    I[#I + 1] = { F.DI_FIXEDIT, 7, row + 1, 11, row + 1, 0, 0, "9999", F.DIF_MASKEDIT, "" }
     ID.year = #I
-    I[#I + 1] = { F.DI_BUTTON, 7, 4, 0, 4, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl→" }
+    I[#I + 1] = { F.DI_BUTTON, 7, row + 2, 0, row + 2, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl→" }
     ID.yearInc = #I
-    I[#I + 1] = { F.DI_BUTTON, 15, 2, 0, 2, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl↑" }
+    I[#I + 1] = { F.DI_BUTTON, 15, row, 0, row, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl↑" }
     ID.monthDec = #I
-    I[#I + 1] = { F.DI_TEXT, 13, 3, 0, 3, 0, 0, 0, 0, L.Month }
+    I[#I + 1] = { F.DI_TEXT, 13, row + 1, 0, row + 1, 0, 0, 0, 0, L.Month }
     -- FAR has Polish localization; Polish has “październik” (11 chars). Note: e.g. Moroccan Arabic has a 15-char month name
-    I[#I + 1] = { F.DI_COMBOBOX, 15, 3, 22, 3, ComboMonths, 0, 0, F.DIF_DROPDOWNLIST + F.DIF_LISTNOAMPERSAND + F.DIF_LISTAUTOHIGHLIGHT, "" }
+    I[#I + 1] = { F.DI_COMBOBOX, 15, row + 1, 22, row + 1, ComboMonths, 0, 0, F.DIF_DROPDOWNLIST + F.DIF_LISTNOAMPERSAND + F.DIF_LISTAUTOHIGHLIGHT, "" }
     ID.month = #I
-    I[#I + 1] = { F.DI_BUTTON, 15, 4, 0, 4, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl↓" }
+    I[#I + 1] = { F.DI_BUTTON, 15, row + 2, 0, row + 2, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, "Ctrl↓" }
     ID.monthInc = #I
-    I[#I + 1] = { F.DI_RADIOBUTTON, 25, 2, 0, 2, Settings.FirstSunday and 0 or 1, 0, 0, 0, L.Mon }
+    I[#I + 1] = { F.DI_RADIOBUTTON, 25, row, 0, row, Settings.FirstSunday and 0 or 1, 0, 0, 0, L.Mon }
     ID.firstMo = #I
-    I[#I + 1] = { F.DI_RADIOBUTTON, 25, 3, 0, 3, Settings.FirstSunday and 1 or 0, 0, 0, 0, L.Sun }
+    I[#I + 1] = { F.DI_RADIOBUTTON, 25, row + 1, 0, row + 1, Settings.FirstSunday and 1 or 0, 0, 0, 0, L.Sun }
     ID.firstSu = #I
 
-    I[#I + 1] = { F.DI_TEXT, 20, 4, 30, 4, 0, 0, 0, F.DIF_RIGHTTEXT, L.Select }
-    local row = 5
+    I[#I + 1] = { F.DI_TEXT, 20, row + 3, 30, row + 3, 0, 0, 0, F.DIF_RIGHTTEXT, L.Select }
+
+    row = 6
     for d = 1, 7 do
         I[#I + 1] = { F.DI_TEXT, d * 4 + 1, row, 0, row, 0, 0, 0, 0, "" }
     end
@@ -223,32 +227,31 @@ local function ExecCalendar()
             I[#I + 1] = { F.DI_TEXT, d * 4, row + 1 + w, 0, row + 1 + w, 0, 0, 0, 0, "" }
         end
     end
-
     I[#I + 1] = { F.DI_USERCONTROL, 4, row + 1, 31, row + 6, 0, 0, 0, F.DIF_FOCUS }
     ID.userControl = #I
-    I[#I + 1] = { F.DI_TEXT, 5, 12, 28, 12, 0, 0, 0, 0, "Ctrl(Shift,Alt)[F1-F3,LMB]" }
-    ID.hotKeys = #I
-    I[#I + 1] = { F.DI_TEXT, 5, 13, 0, 13, 0, 0, 0, 0, L.DateFormat }
-    I[#I + 1] = { F.DI_EDIT, 7, 13, 15, 13, 0, "Format", 0, F.DIF_HISTORY, Settings.Format }
+
+    row = 14
+    I[#I + 1] = { F.DI_TEXT, 5, row, 0, row, 0, 0, 0, 0, L.DateFormat }
+    I[#I + 1] = { F.DI_EDIT, 7, row, 15, row, 0, "Format", 0, F.DIF_HISTORY, Settings.Format }
     ID.format = #I
-    I[#I + 1] = { F.DI_TEXT, 18, 13, 0, 13, 0, 0, 0, 0, L.Info }
-    I[#I + 1] = { F.DI_EDIT, 20, 13, 29, 13, 0, "Info", 0, F.DIF_HISTORY, Settings.Info }
+    I[#I + 1] = { F.DI_TEXT, 18, row, 0, row, 0, 0, 0, 0, L.Info }
+    I[#I + 1] = { F.DI_EDIT, 20, row, 29, row, 0, "Info", 0, F.DIF_HISTORY, Settings.Info }
     ID.info = #I
-    I[#I + 1] = { F.DI_BUTTON, 7, 14, 0, 14, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, L.Help }
+    I[#I + 1] = { F.DI_BUTTON, 7, row + 1, 0, row + 1, 0, 0, 0, F.DIF_BTNNOCLOSE + F.DIF_NOBRACKETS, L.Help }
     ID.help = #I
-    I[#I + 1] = { F.DI_TEXT, 5, 15, 0, 15, 0, 0, 0, 0, L.FormattedDate }
-    I[#I + 1] = { F.DI_EDIT, 7, 15, 18, 15, 0, 0, 0, F.DIF_SELECTONENTRY, "" }
+    I[#I + 1] = { F.DI_TEXT, 5, row + 2, 0, row + 2, 0, 0, 0, 0, L.FormattedDate }
+    I[#I + 1] = { F.DI_EDIT, 7, row + 2, 18, row + 2, 0, 0, 0, F.DIF_SELECTONENTRY, "" }
     ID.textDate = #I
-    I[#I + 1] = { F.DI_TEXT, 20, 15, 29, 15, 0, 0, 0, 0, "" }
+    I[#I + 1] = { F.DI_TEXT, 20, row + 2, 29, row + 2, 0, 0, 0, 0, "" }
     ID.textInfo = #I
-    I[#I + 1] = { F.DI_BUTTON, 7, 16, 17, 16, 0, 0, 0, F.DIF_BTNNOCLOSE, L.Refresh }
+    I[#I + 1] = { F.DI_BUTTON, 7, row + 3, 17, row + 3, 0, 0, 0, F.DIF_BTNNOCLOSE, L.Refresh }
     ID.parse = #I
-    I[#I + 1] = { F.DI_BUTTON, 20, 16, 29, 16, 0, 0, 0, F.DIF_BTNNOCLOSE, L.Today }
+    I[#I + 1] = { F.DI_BUTTON, 20, row + 3, 29, row + 3, 0, 0, 0, F.DIF_BTNNOCLOSE, L.Today }
     ID.today = #I
-    I[#I + 1] = { F.DI_TEXT, 0, 17, 0, 16, 0, 0, 0, F.DIF_SEPARATOR, "" }
-    I[#I + 1] = { F.DI_BUTTON, 0, 18, 0, 18, 0, 0, 0, F.DIF_CENTERGROUP + F.DIF_DEFAULTBUTTON, L.Insert }
+    I[#I + 1] = { F.DI_TEXT, 0, row + 4, 0, row + 4, 0, 0, 0, F.DIF_SEPARATOR, "" }
+    I[#I + 1] = { F.DI_BUTTON, 0, row + 5, 0, row + 5, 0, 0, 0, F.DIF_CENTERGROUP + F.DIF_DEFAULTBUTTON, L.Insert }
     ID.insert = #I
-    I[#I + 1] = { F.DI_BUTTON, 0, 18, 0, 18, 0, 0, 0, F.DIF_CENTERGROUP, L.Copy }
+    I[#I + 1] = { F.DI_BUTTON, 0, row + 5, 0, row + 5, 0, 0, 0, F.DIF_CENTERGROUP, L.Copy }
     ID.copyDate = #I
 
     CF[ID.yearInc] = CalendarColors.Disabled
@@ -258,7 +261,6 @@ local function ExecCalendar()
     CF[ID.textDate] = CalendarColors.Selected
     CF[ID.firstSu] = CalendarColors.Weekend
     CF[ID.help] = CalendarColors.Disabled
-    CF[ID.hotKeys] = CalendarColors.Disabled
 
     local function GetDateText(hDlg)
         return FarSendDlgMessage(hDlg, "DM_GETTEXT", ID.textDate, 0)
@@ -554,7 +556,7 @@ local function ExecCalendar()
     end
 
     local guid = WinUuid("06a13b89-3fec-46a2-be11-a50b68ceaa56")
-    FarDialog(guid, -1, -1, 36, 21, nil, I, nil, DlgProc)
+    FarDialog(guid, -1, -1, 36, 22, nil, I, nil, DlgProc)
     if Text then print(Text) end
 end
 
