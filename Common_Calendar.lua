@@ -87,7 +87,7 @@ local function SaveCalendarSettings(s) mfmsave("dimfish", "Calendar", s) end
 local function CalendarHelp(a) FarShowHelp(MacrosPath .. (WinGetFileAttr(MacrosPath .. FarLang .. ".hlf") and FarLang or "Eng") .. ".hlf", a, F.FHELP_CUSTOMFILE) end
 
 local function ParseDateFormat(format, text)
-    local months = { ['jan'] = 1, ['feb'] = 2, ['mar'] = 3, ['apr'] = 4, ['may'] = 5, ['jun'] = 6, ['jul'] = 7, ['aug'] = 8, ['sep'] = 9, ['oct'] = 10, ['nov'] = 11, ['dec'] = 12, ['янв'] = 1, ['фев'] = 2, ['мар'] = 3, ['апр'] = 4, ['май'] = 5, ['июн'] = 6, ['июл'] = 7, ['авг'] = 8, ['сен'] = 9, ['окт'] = 10, ['ноя'] = 11, ['дек'] = 12, }
+    local months = { ['jan'] = 1, ['feb'] = 2, ['mar'] = 3, ['apr'] = 4, ['may'] = 5, ['jun'] = 6, ['jul'] = 7, ['aug'] = 8, ['sep'] = 9, ['oct'] = 10, ['nov'] = 11, ['dec'] = 12, ['янв'] = 1, ['фев'] = 2, ['мар'] = 3, ['апр'] = 4, ['май'] = 5, ['мая'] = 5, ['июн'] = 6, ['июл'] = 7, ['авг'] = 8, ['сен'] = 9, ['окт'] = 10, ['ноя'] = 11, ['дек'] = 12, }
     local _, dp, mp, yp, arr, yy, mm, dd, isMonthText
 
     isMonthText = format:find("%%[hbB]")
@@ -414,7 +414,7 @@ local function ExecCalendar()
         elseif Param1 == ID.insert then
             Text = GetDateText(hDlg)
         elseif Param1 == -1 then
-            Text = ""
+            Text = nil
         elseif Msg == F.DN_EDITCHANGE then
             if Param1 == ID.year then
                 local selY = tonumber(FarSendDlgMessage(hDlg, "DM_GETTEXT", Param1, 0))
@@ -456,7 +456,7 @@ local function ExecCalendar()
                 FarSendDlgMessage(hDlg, "DM_SETFOCUS", ID.userControl, 0)
             elseif Param1 == ID.copyDate then
                 FarCopyToClipboard(GetDateText(hDlg))
-                Text = "" -- do not print
+                Text = nil
             elseif Param1 == ID.firstSu or Param1 == ID.firstMo then
                 Settings.FirstSunday = FarSendDlgMessage(hDlg, "DM_GETCHECK", ID.firstSu, 0) == 1 and true or false
                 SaveCalendarSettings(Settings)
