@@ -34,8 +34,9 @@ local DayFormats = {
 local CalendarColors = {
     Normal = 0x0,
     Weekend = 0x4,
-    Selected = 0xE,
     Disabled = 0x8,
+    TextDate = 0xE,
+    TextInfo = 0x0,
 }
 
 local VK = { Enter = 13; Left = 37; Up = 38; Right = 39; Down = 40; Ins = 45, C = 67, F1 = 112, F2 = 113, F3 = 114 }
@@ -254,12 +255,14 @@ local function ExecCalendar()
     I[#I + 1] = { F.DI_BUTTON, 0, row + 5, 0, row + 5, 0, 0, 0, F.DIF_CENTERGROUP, L.Copy }
     ID.copyDate = #I
 
+    CF[ID.firstSu] = CalendarColors.Weekend
+    CF[ID.textDate] = CalendarColors.TextDate
+    CF[ID.textInfo] = CalendarColors.TextInfo
+
     CF[ID.yearInc] = CalendarColors.Disabled
     CF[ID.yearDec] = CalendarColors.Disabled
     CF[ID.monthInc] = CalendarColors.Disabled
     CF[ID.monthDec] = CalendarColors.Disabled
-    CF[ID.textDate] = CalendarColors.Selected
-    CF[ID.firstSu] = CalendarColors.Weekend
     CF[ID.help] = CalendarColors.Disabled
 
     local function GetDateText(hDlg)
@@ -297,13 +300,14 @@ local function ExecCalendar()
                 local dayFormat = DayFormats[1]
                 CB[id] = nil
 
+                local dayDisabled = day:getmonth() ~= dt:getmonth()
                 local daySelected = day:getmonth() == dt:getmonth() and day:getday() == dt:getday()
                 local dayIsToday = day:getyear() == today:getyear() and day:getmonth() == today:getmonth() and day:getday() == today:getday()
                 local dayIsWeekend = ((Settings.FirstSunday and mod(d - 2, 7) + 1 or d)) > 5
 
                 tableSelected = daySelected and currentId or tableSelected
 
-                if day:getmonth() ~= dt:getmonth() then
+                if dayDisabled then
                     CF[id] = CalendarColors.Disabled
                 elseif daySelected and dayIsToday then
                     CB[id] = getBG(dayIsWeekend and Settings.SelectedTodayWeekend or Settings.SelectedToday)
@@ -323,11 +327,12 @@ local function ExecCalendar()
                     CF[id] = CalendarColors.Normal
                 end
 
-                FarSendDlgMessage(hDlg, "DM_ENABLE", id, day:getmonth() == dt:getmonth() and 1 or 0)
+                FarSendDlgMessage(hDlg, "DM_ENABLE", id, dayDisabled and 0 or 1)
                 FarSendDlgMessage(hDlg, "DM_SETTEXT", id, fmt(dayFormat, day:getday()))
                 day:adddays(1)
             end
         end
+
         FarSendDlgMessage(hDlg, "DM_SETTEXT", ID.title, dt:fmt(Settings.Format))
         FarSendDlgMessage(hDlg, "DM_SETTEXT", ID.textDate, dt:fmt(Settings.Format))
         FarSendDlgMessage(hDlg, "DM_SETTEXT", ID.textInfo, dt:fmt(Settings.Info))
@@ -465,40 +470,38 @@ local function ExecCalendar()
             end
             Redraw(hDlg)
         elseif Msg == F.DN_CONTROLINPUT then
-            if Param1 ~= ID.month and Param1 ~= ID.format and Param1 ~= ID.info and Param2.ControlKeyState and
+            if Param2.ControlKeyState and
                     band(Param2.ControlKeyState, LeftOrRightCtrl) ~= 0 and
                     band(Param2.ControlKeyState, LeftOrRightAlt) == 0 then
-                if Param2.VirtualKeyCode == VK.Left then
+                local week = band(Param2.ControlKeyState, LeftOrRightShift) ~= 0 and "Weekend" or ""
+                local arrowsAllowed = Param1 ~= ID.month and Param1 ~= ID.format and Param1 ~= ID.info
+
+                if arrowsAllowed and Param2.VirtualKeyCode == VK.Left then
                     dt:addyears(-1)
-                elseif Param2.VirtualKeyCode == VK.Up then
+                elseif arrowsAllowed and Param2.VirtualKeyCode == VK.Up then
                     addmonthsFix(dt, -1)
-                elseif Param2.VirtualKeyCode == VK.Right then
+                elseif arrowsAllowed and Param2.VirtualKeyCode == VK.Right then
                     dt:addyears(1)
-                elseif Param2.VirtualKeyCode == VK.Down then
+                elseif arrowsAllowed and Param2.VirtualKeyCode == VK.Down then
                     addmonthsFix(dt, 1)
                 elseif Param1 ~= ID.textDate and Param2.VirtualKeyCode == VK.Ins or Param2.VirtualKeyCode == VK.C then
                     FarCopyToClipboard(GetDateText(hDlg))
-                    return
-                elseif Param1 == ID.userControl then
-                    local week = band(Param2.ControlKeyState, LeftOrRightShift) ~= 0 and "Weekend" or ""
-                    if Param2.VirtualKeyCode == VK.F1 then
+                    return true
+                elseif Param2.VirtualKeyCode == VK.F1 then
+                    ColorSettings("SelectedToday" .. week)
+                elseif Param2.VirtualKeyCode == VK.F2 then
+                    ColorSettings("Selected" .. week)
+                elseif Param2.VirtualKeyCode == VK.F3 then
+                    ColorSettings("Today" .. week)
+                elseif Param1 == ID.userControl and Param2.ButtonState == 1 then
+                    local delta = getDelta(Param2)
+                    local isToday = dt:getyear() == today:getyear() and dt:getmonth() == today:getmonth() and dt:getday() + delta == today:getday()
+                    if delta == 0 and isToday then
                         ColorSettings("SelectedToday" .. week)
-                    elseif Param2.VirtualKeyCode == VK.F2 then
+                    elseif delta == 0 then
                         ColorSettings("Selected" .. week)
-                    elseif Param2.VirtualKeyCode == VK.F3 then
+                    elseif isToday then
                         ColorSettings("Today" .. week)
-                    elseif Param2.ButtonState == 1 then
-                        local delta = getDelta(Param2)
-                        local isToday = dt:getyear() == today:getyear() and dt:getmonth() == today:getmonth() and dt:getday() + delta == today:getday()
-                        if delta == 0 and isToday then
-                            ColorSettings("SelectedToday" .. week)
-                        elseif delta == 0 then
-                            ColorSettings("Selected" .. week)
-                        elseif isToday then
-                            ColorSettings("Today" .. week)
-                        else
-                            return
-                        end
                     else
                         return
                     end
@@ -506,7 +509,8 @@ local function ExecCalendar()
                     return
                 end
                 Redraw(hDlg)
-            elseif Param1 == ID.userControl and Param2.ControlKeyState and
+                return true
+            elseif Param2.ControlKeyState and
                     band(Param2.ControlKeyState, LeftOrRightCtrl) ~= 0 and
                     band(Param2.ControlKeyState, LeftOrRightAlt) ~= 0 then
                 if Param2.VirtualKeyCode == VK.F1 then
@@ -515,7 +519,7 @@ local function ExecCalendar()
                     MenuSettings("FormatSelected")
                 elseif Param2.VirtualKeyCode == VK.F3 then
                     MenuSettings("FormatToday")
-                elseif Param2.ButtonState == 1 then
+                elseif Param1 == ID.userControl and Param2.ButtonState == 1 then
                     local delta = getDelta(Param2)
                     local isToday = dt:getyear() == today:getyear() and dt:getmonth() == today:getmonth() and dt:getday() + delta == today:getday()
                     if delta == 0 and isToday then
@@ -531,6 +535,7 @@ local function ExecCalendar()
                     return
                 end
                 Redraw(hDlg)
+                return true
             elseif Param1 == ID.userControl then
                 if Param2.VirtualKeyCode == VK.Left then
                     dt:adddays(-1)
@@ -546,11 +551,12 @@ local function ExecCalendar()
                     return
                 end
                 Redraw(hDlg)
+                return true
             elseif Param1 == ID.textDate and Param2.VirtualKeyCode == VK.Enter then
                 if SetDate(hDlg) then
                     Redraw(hDlg)
                 end
-                return true -- don't pass the keypress to the standard handler
+                return true
             end
         end
     end

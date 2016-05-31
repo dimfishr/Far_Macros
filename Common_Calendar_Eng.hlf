@@ -18,6 +18,7 @@ $ # Calendar: Keys #
   #Ctrl-Alt-[F1,F2,F3]#    - ^<wrap>Change Format of Selected Today(#F1#), Selected(#F2#) or Today(#F3#)
 
   #Ctrl-Ins, Ctrl-C#       - ^<wrap>Copy to Clipboard.
+  #Enter#                  - ^<wrap>Insert selected date to command-line or editor or dialog's text input.
 
   #F1#                     - ^<wrap>This help.
 
