@@ -20,6 +20,7 @@ local InfoFormats = {
     "[%U] [%j]",
     "[%V] [%j]",
     "[%W] [%j]",
+    "%A",
 }
 
 local DayFormats = {
@@ -403,15 +404,15 @@ local function ExecCalendar()
         elseif isRendering then
             return
         elseif Msg == F.DN_INITDIALOG then
-            for i = 1, #Formats do
-                FarSendDlgMessage(hDlg, "DM_ADDHISTORY", ID.format, Formats[i], i)
+            for i = #Formats, 1, -1 do
+                FarSendDlgMessage(hDlg, "DM_ADDHISTORY", ID.format, Formats[i])
             end
-            FarSendDlgMessage(hDlg, "DM_ADDHISTORY", ID.format, Settings.Format, 1)
+            FarSendDlgMessage(hDlg, "DM_ADDHISTORY", ID.format, Settings.Format)
+            for i = #InfoFormats, 1, -1 do
+                FarSendDlgMessage(hDlg, "DM_ADDHISTORY", ID.info, InfoFormats[i])
+            end
+            FarSendDlgMessage(hDlg, "DM_ADDHISTORY", ID.info, Settings.Info)
 
-            for i = 1, #InfoFormats do
-                FarSendDlgMessage(hDlg, "DM_ADDHISTORY", ID.info, InfoFormats[i], i)
-            end
-            FarSendDlgMessage(hDlg, "DM_ADDHISTORY", ID.info, Settings.Info, 1)
             Redraw(hDlg)
         elseif Msg == F.DN_HELP or (Msg == F.DN_BTNCLICK and Param1 == ID.help) then
             local topic = (Param1 == ID.format or Param1 == ID.info) and "formats" or nil
