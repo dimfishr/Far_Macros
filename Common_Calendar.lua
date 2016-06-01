@@ -281,11 +281,9 @@ local function ExecCalendar()
         FarSendDlgMessage(hDlg, "DM_LISTSETCURPOS", ID.month, { SelectPos = dt:getmonth() })
 
         local day = date(dt:getyear(), dt:getmonth(), 1)
-        if Settings.FirstSunday then
-            day:adddays(-(day:getweekday() == 1 and 7 or day:getweekday() - 1))
-        else
-            day:adddays(-(day:getisoweekday() == 1 and 7 or day:getisoweekday() - 1))
-        end
+        local weekday = Settings.FirstSunday and day:getweekday() or day:getisoweekday()
+
+        day:adddays(-(weekday == 1 and 7 or weekday - 1))
 
         for d = 1, 7 do
             local id = ID.table - 7 + (Settings.FirstSunday and mod(d, 7) + 1 or d)
