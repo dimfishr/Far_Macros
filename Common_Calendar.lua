@@ -550,7 +550,6 @@ local function ExecCalendar()
                     return
                 end
                 Redraw(hDlg)
-                return true
             elseif Param1 == ID.textDate and Param2.VirtualKeyCode == VK.Enter then
                 if SetDate(hDlg) then
                     Redraw(hDlg)
