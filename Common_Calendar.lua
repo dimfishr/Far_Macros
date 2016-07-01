@@ -535,6 +535,12 @@ local function ExecCalendar()
                 end
                 Redraw(hDlg)
                 return true
+            elseif Param2.ControlKeyState and
+                    band(Param2.ControlKeyState, LeftOrRightShift) ~= 0 and
+                    Param2.VirtualKeyCode == VK.Enter then
+                Text = FarSendDlgMessage(hDlg, "DM_GETTEXT", ID.textInfo, 0)
+                FarSendDlgMessage(hDlg, "DM_CLOSE", 0, 0);
+                return true
             elseif Param1 == ID.userControl then
                 if Param2.VirtualKeyCode == VK.Left then
                     dt:adddays(-1)

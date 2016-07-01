@@ -7,6 +7,7 @@
 * Print or copy custom date format
 * First day option
 * Parse date by selected format or any format
+* Macros Key: Ctrl+Alt+F11
 * Hotkeys: Ctrl+Arrows - change Month/Year
 * Hotkeys: Ctrl+Ins, Ctrl+C - copy to Clipboard
 * Hotkeys: Ctrl+\[F1,F2,F3,LMB\] - change Color of Selected Today or Selected or Today 

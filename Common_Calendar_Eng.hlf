@@ -19,6 +19,7 @@ $ # Calendar: Keys #
 
   #Ctrl-Ins, Ctrl-C#       - ^<wrap>Copy to Clipboard.
   #Enter#                  - ^<wrap>Insert selected date to command-line or editor or dialog's text input.
+  #Shift-Enter#            - ^<wrap>Insert secondary info to command-line or editor or dialog's text input.
 
   #F1#                     - ^<wrap>This help.
 
